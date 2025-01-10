@@ -93,8 +93,6 @@ tracks = pattern["tracks"]
 print(f"{pattern_name=}")
 print(f"  {tracks=}\n")
 
-# print(f"  {hits=}")
-
 print(f"Loading wav files for '{pattern_name}'...")
 wavs = []
 for track in tracks:
@@ -115,15 +113,14 @@ for beat in range(16):
     beats[beat] = []
     if beat % 4 == 0:
         j += 1
-    print(f"Looking at {beat}/{j}...")
+    # print(f"Looking at {beat}/{j}...")
     i_track = 0
     for track in tracks:
         beat_char = track["pattern"][j]
         if beat_char != "-":
-            print(f"  beat at {beat}/{j} from {track["pattern"]} = {beat_char}")
+            # print(f"  beat at {beat}/{j} from {track["pattern"]} = {beat_char}")
             track_and_volume = (i_track, int(beat_char))
-            print(f" - adding {track_and_volume}")
-
+            # print(f" - adding {track_and_volume}")
             beats[beat].append(track_and_volume)
         i_track += 1
     j += 1
@@ -141,13 +138,13 @@ while True:
     for beat in beats:
         print(f" BEAT '{beat_names[n]}': {beat=}")
         for b_list in beat:
-            print(f"  {b_list=}")
+            # print(f"  {b_list=}")
             track_index, volume = b_list
             if volume != 0:
-                print(f" *** playing {track_index=} {volume=} ")
+                print(f"     playing {track_index=} {volume=} ")
+                mixer.voice[track_index].level = volume/9
                 mixer.voice[track_index].play(wavs[track_index])
 
         time.sleep(SLEEP_TIME)
-        n += 1
-        n = n % 16
+        n = (n+1) % 16
     
