@@ -1,0 +1,18 @@
+[
+    {
+    "rhythm": "Boom-Chuck",
+    "tracks":
+        [
+            {"wav": "wav/snare_1.wav", "pattern": "---- 5--- ---- 5---"},
+            {"wav": "wav/kick_1.wav",  "pattern": "9--- ---- 9--- ----"}
+        ]
+    },
+    {
+    "rhythm": "Chicka-Boom",
+    "tracks":
+        [
+            {"wav": "wav/snare_1.wav", "pattern": "5--- 5--- 5--- 5---"},
+            {"wav": "wav/kick_1.wav",  "pattern": "9--- ---- 9--- ----"}
+        ]
+    }
+]
