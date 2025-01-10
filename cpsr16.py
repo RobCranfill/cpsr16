@@ -83,8 +83,6 @@ if len(patterns) == 0:
 mixer = init_audio(len(patterns))
 
 
-SLEEP_TIME = 0.5
-
 pattern_to_use = 0
 print(f"Selecting pattern #{pattern_to_use}...")
 
@@ -131,14 +129,25 @@ for beat in range(16):
     j += 1
 
 print(f" >>> {beats}")
+print(f" >>> {len(beats)=}")
 
 
+SLEEP_TIME = 0.1
+
+beat_names = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
+n = 0
 while True:
 
     for beat in beats:
-        print(f" {beat=} = {hits[beat-1]=}")
-
-        for i in hits[beat-1]:
-            mixer.voice[i].play(wavs[i])
+        print(f" BEAT '{beat_names[n]}': {beat=}")
+        for b_list in beat:
+            print(f"  {b_list=}")
+            track_index, volume = b_list
+            if volume != 0:
+                print(f" *** playing {track_index=} {volume=} ")
+                mixer.voice[track_index].play(wavs[track_index])
 
         time.sleep(SLEEP_TIME)
+        n += 1
+        n = n % 16
+    
