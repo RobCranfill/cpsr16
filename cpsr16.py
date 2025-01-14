@@ -7,15 +7,23 @@
 #  sox loop.mp3 -b 16 -c 1 -r 22050 loop.wav
 
 # stdlibs
+import gc
 import json
 import random
 import sys
 import time
 
 # adafruit libs
+import board
+import audiobusio
 import audiocore
 import audiomixer
-import board
+
+
+# for I2S audio with external I2S DAC board
+AUDIO_OUT_I2S_BIT  = board.D9
+AUDIO_OUT_I2S_DATA = board.D11
+AUDIO_OUT_I2S_WORD = board.D10
 
 
 def read_data(filename):
@@ -48,23 +56,23 @@ def read_data(filename):
     return result
 
 
-def init_audio(n_voices):
-    """Return the mixer"""
+# def init_audio(n_voices):
+#     """Return the mixer"""
 
-    # for I2S audio with external I2S DAC board
-    AUDIO_OUT_I2S_BIT  = board.D9
-    AUDIO_OUT_I2S_DATA = board.D11
-    AUDIO_OUT_I2S_WORD = board.D10
-    import audiobusio
-    audio = audiobusio.I2SOut(
-        bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
+#     # for I2S audio with external I2S DAC board
+#     AUDIO_OUT_I2S_BIT  = board.D9
+#     AUDIO_OUT_I2S_DATA = board.D11
+#     AUDIO_OUT_I2S_WORD = board.D10
+#     import audiobusio
+#     audio = audiobusio.I2SOut(
+#         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
 
-    mixer = audiomixer.Mixer(voice_count=n_voices, 
-                            sample_rate=22050, channel_count=2,
-                            bits_per_sample=16, samples_signed=True)
+#     mixer = audiomixer.Mixer(voice_count=n_voices, 
+#                             sample_rate=22050, channel_count=2,
+#                             bits_per_sample=16, samples_signed=True)
 
-    audio.play(mixer) # attach mixer to audio playback
-    return mixer
+#     audio.play(mixer) # attach mixer to audio playback
+#     return mixer
 
 
 ###########################################################3
@@ -80,10 +88,23 @@ if len(patterns) == 0:
     sys.exit()
 # print(f" >> got {patterns}")
 
-mixer = init_audio(len(patterns))
+#####################################################################
+# mixer = init_audio(len(patterns))
+#
+# TODO: this needs to be calculated:
+n_voices = 3
+
+audio = audiobusio.I2SOut(
+    bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
+
+mixer = audiomixer.Mixer(voice_count=n_voices, 
+                        sample_rate=22050, channel_count=2,
+                        bits_per_sample=16, samples_signed=True)
+
+audio.play(mixer) # attach mixer to audio playback
 
 
-pattern_to_use = 0
+pattern_to_use = 3
 print(f"Selecting pattern #{pattern_to_use}...")
 
 pattern = patterns[pattern_to_use]
@@ -101,13 +122,11 @@ for track in tracks:
     wavs.append(audiocore.WaveFile(open(filename,"rb")))
 print(" * wav files loaded ok!")
 
+
 # construct a list of list of each voice & volume to use for each beat (and sub-beat)
 # so that item i has all the (track,volume) pairs for beat i
 #
 beats = [None] * 16
-# for i in range(16):
-#     beats[i] = []
-
 j = -1 # The input is broken into 4-char chunks for readability, so j is index into string
 for beat in range(16):
     beats[beat] = []
@@ -129,22 +148,37 @@ print(f" >>> {beats}")
 print(f" >>> {len(beats)=}")
 
 
+# def works_in_a_function():
+    
 SLEEP_TIME = 0.1
 
+gc.collect()
+print(f"\n{gc.mem_free()=}\n")
+
 beat_names = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
-n = 0
+b = 0
 while True:
 
     for beat in beats:
-        print(f" BEAT '{beat_names[n]}': {beat=}")
-        for b_list in beat:
-            # print(f"  {b_list=}")
-            track_index, volume = b_list
+        print(f" BEAT '{beat_names[b]}': {beat=}")
+        for voice_list in beat:
+            # print(f"  {voice_list=}")
+            track_index, volume = voice_list
             if volume != 0:
-                print(f"     playing {track_index=} {volume=} ")
+                print(f"     playing {track_index=} @ {volume=} ")
+                # print(f" - {mixer.voice}")
+
+                # does this help the prolem at hand? no.
+                if mixer.voice[track_index].playing:
+                    # print("stopping voice")
+                    mixer.stop_voice(track_index)
+                    mixer.voice[track_index].stop()
+
                 mixer.voice[track_index].level = volume/9
                 mixer.voice[track_index].play(wavs[track_index])
 
         time.sleep(SLEEP_TIME)
-        n = (n+1) % 16
-    
+        b = (b+1) % 16
+        
+
+# works_in_a_function()

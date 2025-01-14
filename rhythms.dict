@@ -14,5 +14,22 @@
             {"wav": "wav/snare_1.wav", "pattern": "5--- 5--- 5--- 5---"},
             {"wav": "wav/kick_1.wav",  "pattern": "9--- ---- 9--- ----"}
         ]
+    },
+    {
+    "rhythm": "Ducka-Doom",
+    "tracks":
+        [
+            {"wav": "wav/snare_1.wav", "pattern": "---- 5--- ---- 5---"},
+            {"wav": "wav/kick_1.wav",  "pattern": "9--- ---- 9-9- ----"}
+        ]
+    },
+    {
+    "rhythm": "Ticka-Ticka",
+    "tracks":
+        [
+            {"wav": "wav/snare_1.wav",   "pattern": "---- 5--- ---- 5---"},
+            {"wav": "wav/kick_1.wav",    "pattern": "9--- ---- 9-9- ----"},
+            {"wav": "wav/dxopenhat.wav", "pattern": "4-4- 4-4- 4-4- 4-4-"}
+        ]
     }
 ]
