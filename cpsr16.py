@@ -15,9 +15,19 @@ import time
 
 # adafruit libs
 import board
+import busio
+
 import audiobusio
 import audiocore
 import audiomixer
+
+import adafruit_apds9960.apds9960
+GESTURE_NONE = 0 # No gesture detected
+GESTURE_UP = 1 # Up gesture detected
+GESTURE_DOWN = 2 # Down gesture detected
+GESTURE_LEFT = 3 # Left gesture detected
+GESTURE_RIGHT = 4 # Right gesture detected
+GESTURE_NAMES = ["(none)", "up", "down", "left", "right"]
 
 
 # for I2S audio with external I2S DAC board
@@ -111,6 +121,25 @@ print(f"Found max of {max_voices} tracks")
 
 audio, mixer = init_audio(max_voices)
 
+try:
+    i2c = busio.I2C(board.SCL, board.SDA)
+    gesture_sensor = adafruit_apds9960.apds9960.APDS9960(i2c)
+    print(f"{gesture_sensor=}")
+    gesture_sensor.enable_proximity = True # needed for gesture sensing
+    gesture_sensor.enable_color = False
+    gesture_sensor.enable_gesture = True
+
+    # print("TESTING GESTURES!")
+    # while True:
+    #     gesture = gesture_sensor.gesture()
+    #     if gesture != GESTURE_NONE:
+    #         print(f"{gesture=} = {GESTURE_NAMES[gesture]}")
+
+except:
+    print("Can't init adafruit_apds9960!")
+    sys.exit()
+
+
 
 # Select which pattern. This will be controlled by the UI.
 #
@@ -135,14 +164,23 @@ gc.collect()
 print(f"\n{gc.mem_free()=}\n")
 
 
+
+
+
 b = 0
 n = 0
 while True:
-
     for beat in beats:
+
         if len(beat) > 0:
             print(f" BEAT '{BEAT_NAMES[b]}': {beat=}")
+
         for voice_list in beat:
+
+            gesture = gesture_sensor.gesture()
+            # if gesture != GESTURE_NONE:
+            print(f"{gesture=}")
+
             # print(f"  {voice_list=}")
             track_index, volume = voice_list
             if volume != 0:
@@ -159,11 +197,11 @@ while True:
 
         b = (b+1) % 16
 
-        # How's memory doing? Looks fine!
-        n += 1
-        if n % 100 == 0:
-            # gc.collect()
-            print(f"\n{gc.mem_free()=}\n")
+        # # How's memory doing? Looks fine!
+        # n += 1
+        # if n % 100 == 0:
+        #     # gc.collect()
+        #     print(f"\n{gc.mem_free()=}\n")
 
         time.sleep(SLEEP_TIME)
 
