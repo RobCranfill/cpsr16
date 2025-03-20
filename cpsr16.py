@@ -1,10 +1,5 @@
-# CPSR16 - A CircutPython drum machine, vaguely inspired by the Alesis SR16
-# read patterns from text file?
-
-# based on:
-# @todbot / Tod Kurt - https://github.com/todbot/plinkykeeb
-# Convert files to appropriate WAV format (mono, 22050 Hz, 16-bit signed) with command:
-#  sox loop.mp3 -b 16 -c 1 -r 22050 loop.wav
+# CPSR16 - A CircutPython drum machine, 
+# functioning more or less like an Alesis SR-16
 
 # stdlibs
 import gc
@@ -21,13 +16,10 @@ import audiobusio
 import audiocore
 import audiomixer
 
-import adafruit_apds9960.apds9960
-GESTURE_NONE = 0 # No gesture detected
-GESTURE_UP = 1 # Up gesture detected
-GESTURE_DOWN = 2 # Down gesture detected
-GESTURE_LEFT = 3 # Left gesture detected
-GESTURE_RIGHT = 4 # Right gesture detected
-GESTURE_NAMES = ["(none)", "up", "down", "left", "right"]
+
+DATA_FILE_NAME = "rhythms-v2-b.dict"
+
+NOT_PLAYING_DELAY = 0.1
 
 
 # for I2S audio with external I2S DAC board
@@ -37,19 +29,22 @@ AUDIO_OUT_I2S_WORD = board.D10
 
 BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
+
 import supervisor
 supervisor.runtime.autoreload = False
 print(f"{supervisor.runtime.autoreload=}")
+
 
 def read_data(filename):
     """Returns the de-JSON-ed data, basically."""
     
     with open(filename) as f:
         data = f.read() 
-    # print(f">>> raw data: {data}")
+    print(f">>> read_data: {data}")
 
     result = json.loads(data)
     return result
+
 
 def init_audio(n_voices):
     """Return (audio, mixer)"""
@@ -65,6 +60,7 @@ def init_audio(n_voices):
     au.play(mx) # attach mixer to audio playback
     return au, mx
 
+
 def load_wavs(tracks):
     print(f"Loading wav files for '{pattern_name}'...")
     wav_list = []
@@ -74,6 +70,7 @@ def load_wavs(tracks):
         wav_list.append(audiocore.WaveFile(open(filename,"rb")))
     print(" * wav files loaded ok!")
     return wav_list
+
 
 def make_beats(tracks):
     # Construct a list of list of each voice & volume to use for each beat (and sub-beat)
@@ -100,86 +97,87 @@ def make_beats(tracks):
     return beat_list
 
 
+def load_setup(setup_dict, index):
+    """parse the setup dict to retrun n_voices, more"""
+
+    setup = setup_dict[index]
+
+    setup_name = setup["setup"]
+    kit = setup["kit"]
+    n_voices = len(kit)
+
+    print(f"{setup_name=} has {n_voices=}")
+
+    wavs = []
+    print(f"Loading wav files for '{setup_name}'...")
+    wav_list = []
+    for voice, filename in kit.items():
+        print(f"  - loading {voice} from {filename}...")
+        wav_list.append(audiocore.WaveFile(open(filename,"rb")))
+    print(f" * {len(wav_list)} wav files loaded ok!")
+
+
+    return setup_name, n_voices, wavs
+
+
+
 ###########################################################3
 
 # TODO: needed? "Wait a little bit so USB can stabilize and not glitch audio"
 time.sleep(2)
 
 # TODO: Handle malformed data?
-patterns = read_data("rhythms.dict")
-if len(patterns) == 0:
+setups = read_data(DATA_FILE_NAME)
+if len(setups) == 0:
     print("Gotta have some data!")
     sys.exit()
-# print(f" >> got {patterns}")
-
-# Find the max number of voices used in any pattern.
-max_voices = 0
-for pattern in patterns:
-    if len(pattern["tracks"]) > max_voices:
-        max_voices = len(pattern["tracks"])
-print(f"Found max of {max_voices} tracks")
-
-audio, mixer = init_audio(max_voices)
-
-try:
-    i2c = busio.I2C(board.SCL, board.SDA)
-    gesture_sensor = adafruit_apds9960.apds9960.APDS9960(i2c)
-    print(f"{gesture_sensor=}")
-    gesture_sensor.enable_proximity = True # needed for gesture sensing
-    gesture_sensor.enable_color = False
-    gesture_sensor.enable_gesture = True
-
-    # print("TESTING GESTURES!")
-    # while True:
-    #     gesture = gesture_sensor.gesture()
-    #     if gesture != GESTURE_NONE:
-    #         print(f"{gesture=} = {GESTURE_NAMES[gesture]}")
-
-except:
-    print("Can't init adafruit_apds9960!")
-    sys.exit()
+print(f" >> setups: {setups}")
 
 
+# TODO: select via UI
+setup_to_use = 0
+name, n_voices, wavs = load_setup(setups, setup_to_use)
 
-# Select which pattern. This will be controlled by the UI.
-#
-pattern_to_use = 3
-print(f"Selecting pattern #{pattern_to_use}...")
-
-pattern = patterns[pattern_to_use]
-pattern_name = pattern["rhythm"]
-tracks = pattern["tracks"]
-
-print(f"{pattern_name=}")
-print(f"  {tracks=}\n")
+audio, mixer = init_audio(n_voices)
 
 
-wavs = load_wavs(tracks)
+# # Select which pattern. TODO: via UI
+# #
+# pattern_to_use = "main_a"
+# print(f"Selecting pattern #{pattern_to_use}: '{patterns[pattern_to_use]["pattern"]}'")
+
+# pattern = patterns[pattern_to_use]
+# pattern_name = pattern["rhythm"]
+# tracks = pattern["tracks"]
+
+# print(f"{pattern_name=}")
+# print(f"  {tracks=}\n")
+
+
+# wavs = load_wavs(tracks)
+
 beats = make_beats(tracks)
 
-# 120 BPM
+# 120 BPM, sorta
 SLEEP_TIME = 1/8
-
-gc.collect()
-print(f"\n{gc.mem_free()=}\n")
-
-
-
 
 
 b = 0
-n = 0
+playing = True
 while True:
+
+    # if not playing:
+    #     print("Not playing!")
+    #     time.sleep(NOT_PLAYING_DELAY)
+    #     playing = check_gesture(gesture_sensor)
+    #     continue
+
     for beat in beats:
 
         if len(beat) > 0:
             print(f" BEAT '{BEAT_NAMES[b]}': {beat=}")
 
         for voice_list in beat:
-
-            gesture = gesture_sensor.gesture()
-            # if gesture != GESTURE_NONE:
-            print(f"{gesture=}")
 
             # print(f"  {voice_list=}")
             track_index, volume = voice_list
@@ -197,12 +195,5 @@ while True:
 
         b = (b+1) % 16
 
-        # # How's memory doing? Looks fine!
-        # n += 1
-        # if n % 100 == 0:
-        #     # gc.collect()
-        #     print(f"\n{gc.mem_free()=}\n")
-
         time.sleep(SLEEP_TIME)
-
 
