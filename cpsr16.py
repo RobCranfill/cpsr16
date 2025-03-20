@@ -1,6 +1,9 @@
 # CPSR16 - A CircutPython drum machine, 
 # functioning more or less like an Alesis SR-16
 
+# Hardcoded for 16ths! :-(
+
+
 # stdlibs
 import gc
 import json
@@ -35,7 +38,7 @@ supervisor.runtime.autoreload = False
 print(f"{supervisor.runtime.autoreload=}")
 
 
-def read_data(filename):
+def read_json(filename):
     """Returns the de-JSON-ed data, basically."""
     
     with open(filename) as f:
@@ -53,6 +56,7 @@ def init_audio(n_voices):
     au = audiobusio.I2SOut(
         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
 
+    print(f"Creating mixer with {n_voices} voices....")
     mx = audiomixer.Mixer(voice_count=n_voices, 
                             sample_rate=22050, channel_count=2,
                             bits_per_sample=16, samples_signed=True)
@@ -61,15 +65,15 @@ def init_audio(n_voices):
     return au, mx
 
 
-def load_wavs(tracks):
-    print(f"Loading wav files for '{pattern_name}'...")
-    wav_list = []
-    for track in tracks:
-        filename = track["wav"]
-        print(f"  - loading {filename}...")
-        wav_list.append(audiocore.WaveFile(open(filename,"rb")))
-    print(" * wav files loaded ok!")
-    return wav_list
+# def load_wavs(tracks):
+#     print(f"Loading wav files for '{pattern_name}'...")
+#     wav_list = []
+#     for track in tracks:
+#         filename = track["wav"]
+#         print(f"  - loading {filename}...")
+#         wav_list.append(audiocore.WaveFile(open(filename,"rb")))
+#     print(" * wav files loaded ok!")
+#     return wav_list
 
 
 def make_beats(tracks):
@@ -98,7 +102,7 @@ def make_beats(tracks):
 
 
 def load_setup(setup_dict, index):
-    """parse the setup dict to retrun n_voices, more"""
+    """parse the setup dict to return info for setup #index; TODO: by name? """
 
     setup = setup_dict[index]
 
@@ -109,15 +113,35 @@ def load_setup(setup_dict, index):
     print(f"{setup_name=} has {n_voices=}")
 
     wavs = []
+    wav_dict = {}
+
     print(f"Loading wav files for '{setup_name}'...")
-    wav_list = []
     for voice, filename in kit.items():
-        print(f"  - loading {voice} from {filename}...")
-        wav_list.append(audiocore.WaveFile(open(filename,"rb")))
-    print(f" * {len(wav_list)} wav files loaded ok!")
+        print(f"  - loading '{voice}' from '{filename}'...")
+        wav = audiocore.WaveFile(open(filename,"rb"))
+        wavs.append(wav)
+
+        wav_dict[voice] = wav
+
+    print(f"  * {len(wavs)} wav files loaded ok!")
 
 
-    return setup_name, n_voices, wavs
+    for pattern_name, pattern_dict in setup["patterns"].items():
+        print(f"loading pattern '{pattern_name}', {pattern_dict=}")
+        for v, p in pattern_dict.items():
+            print(f" ** parse {v}, {p}")
+
+
+    # The list of "beats" for each 16th note:
+    # a beat is a list of (mixer channel, wav, volume) for as many channels as are playing
+
+    beats = [()] * 16
+    beats[0] = ((0, wav_dict["snare"], 5),  (0, wav_dict["kick"], 9))
+    beats[4] = ((0, wav_dict["snare"], 9),)
+    beats[6] = ((0, wav_dict["snare"], 9),)
+
+    return setup_name, n_voices, beats
+
 
 
 
@@ -127,42 +151,27 @@ def load_setup(setup_dict, index):
 time.sleep(2)
 
 # TODO: Handle malformed data?
-setups = read_data(DATA_FILE_NAME)
+setups = read_json(DATA_FILE_NAME)
 if len(setups) == 0:
     print("Gotta have some data!")
     sys.exit()
 print(f" >> setups: {setups}")
 
-
 # TODO: select via UI
 setup_to_use = 0
-name, n_voices, wavs = load_setup(setups, setup_to_use)
+name, n_voices, beats = load_setup(setups, setup_to_use)
 
 audio, mixer = init_audio(n_voices)
 
 
-# # Select which pattern. TODO: via UI
-# #
-# pattern_to_use = "main_a"
-# print(f"Selecting pattern #{pattern_to_use}: '{patterns[pattern_to_use]["pattern"]}'")
-
-# pattern = patterns[pattern_to_use]
-# pattern_name = pattern["rhythm"]
-# tracks = pattern["tracks"]
-
-# print(f"{pattern_name=}")
-# print(f"  {tracks=}\n")
-
-
-# wavs = load_wavs(tracks)
-
-beats = make_beats(tracks)
-
 # 120 BPM, sorta
 SLEEP_TIME = 1/8
 
-
+# this is just for printing the nice beat name like "one" or "and"
 b = 0
+
+print()
+
 playing = True
 while True:
 
@@ -172,15 +181,17 @@ while True:
     #     playing = check_gesture(gesture_sensor)
     #     continue
 
-    for beat in beats:
+    for hist_list in beats:
+        print(f"{hist_list=}")
 
-        if len(beat) > 0:
-            print(f" BEAT '{BEAT_NAMES[b]}': {beat=}")
+        if len(hist_list) > 0:
+            print(f" BEAT '{BEAT_NAMES[b]}': {hist_list=}")
 
-        for voice_list in beat:
+        for channel, wav, volume in hist_list:
 
-            # print(f"  {voice_list=}")
-            track_index, volume = voice_list
+            # channel, wav, volume = hit_tuple
+            print(f"  {channel=}, {wav=}, {volume=}")
+
             if volume != 0:
                 # print(f"     playing {track_index=} @ {volume=} ")
                 # print(f" - {mixer.voice}")
@@ -190,8 +201,8 @@ while True:
                 #     mixer.stop_voice(track_index)
                 #     mixer.voice[track_index].stop()
 
-                mixer.voice[track_index].level = volume/9
-                mixer.voice[track_index].play(wavs[track_index])
+                mixer.voice[channel].level = volume/9
+                mixer.voice[channel].play(wav)
 
         b = (b+1) % 16
 
