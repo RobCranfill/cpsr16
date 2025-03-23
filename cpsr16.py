@@ -63,8 +63,11 @@ def init_audio(n_voices):
                             bits_per_sample=16, samples_signed=True)
 
     au.play(mx) # attach mixer to audio playback
+    print("  OK!")
     return au, mx
 
+
+# we no longer have 'tracks'...
 
 # def load_wavs(tracks):
 #     print(f"Loading wav files for '{pattern_name}'...")
@@ -77,7 +80,7 @@ def init_audio(n_voices):
 #     return wav_list
 
 
-def make_beats(tracks):
+def make_beats_old(tracks):
     # Construct a list of list of each voice & volume to use for each beat (and sub-beat)
     # so that item i has all the (track,volume) pairs for beat i
     beat_list = [None] * 16
@@ -122,36 +125,28 @@ def load_kit(setup, setup_name):
     wav_dict = {}
 
     print(f"Loading {n_voices} wav files for '{setup_name}'...")
-    for voice, filename in kit.items():
-        print(f"  - loading '{voice}' from '{filename}'...")
+    for pad_name, filename in kit.items():
+        print(f"  - loading '{pad_name}' from '{filename}'...")
+
+        # TODO: catch exception?
         wav = audiocore.WaveFile(open(filename,"rb"))
         wavs.append(wav)
 
-        wav_dict[voice] = wav
+        wav_dict[pad_name] = wav
 
     print(f"  * {len(wavs)} wav files loaded ok!")
+    # print(f"  {wav_dict=}")
+
     return n_voices, wav_dict
 
-def load_patterns(setup):
 
-    for pattern_name, pattern_dict in setup["patterns"].items():
-        print(f"loading pattern '{pattern_name}', {pattern_dict=}")
-        for v, p in pattern_dict.items():
-            print(f" ** parse {v}, {p}")
+# def load_patterns(setup):
+#     """Load the patterns for this setup"""
 
-
-
-def load_beats_for_patterns(pattern_name, wav_dict, patterns):
-
-    # The list of "beats" for each 16th note:
-    # a beat is a list of (mixer channel, wav, volume) for as many channels as are playing
-
-    beats = [()] * 16
-    beats[0] = ((0, wav_dict["snare"], 5),  (0, wav_dict["kick"], 9))
-    beats[4] = ((0, wav_dict["snare"], 9),)
-    beats[6] = ((0, wav_dict["snare"], 9),)
-
-    return beats
+#     for pattern_name, pattern_dict in setup["patterns"].items():
+#         print(f"loading pattern '{pattern_name}', {pattern_dict=}")
+#         for v, p in pattern_dict.items():
+#             print(f" ** parse {v}, {p}")
 
 
 def get_setup_names(setups):
@@ -164,6 +159,85 @@ def get_setup_names(setups):
         names.append(name)
     print()
     return names
+
+
+def parse_pattern_track():
+    """Return one track list, like one beat in a beat list."""
+    print("parse_pattern_track")
+
+def tracks_to_beats():
+    print("tracks_to_beats")
+
+
+def make_beats(pad_name, beat_pattern):
+
+    print(f"make_beats pad '{pad_name}': '{beat_pattern}'")
+
+    beat_list = [None] * 16
+    j = -1 # The input is broken into 4-char chunks for readability; j is index into beat_pattern string.
+    for beat in range(16):
+        if beat % 4 == 0:
+            j += 1
+        print(f"Looking at {beat} char {j}...")
+        beat_char = beat_pattern[j]
+        if beat_char != "-":
+            # print(f"  beat at {beat}/{j} from {track["pattern"]} = {beat_char}")
+            track_and_volume = (i_track, int(beat_char))
+            # print(f" - adding {track_and_volume}")
+            beat_list[beat].append(track_and_volume)
+        j += 1
+
+    print(f"{beat_list=}")
+    return beat_list
+
+
+    
+def load_beats_for_patterns(setup, wav_dict):
+    """Load all the beats for all the patterns, so we are ready to switch as needed."""
+
+    """
+    returns a dict like:
+      {"main_a": beats[16],
+       "main_b": beats[16],
+       ...
+       }
+    where beats[] are like:
+        beats = [()] * 16
+        beats[0] = ((0, wav_dict["snare"], 5),  (0, wav_dict["kick"], 9))
+        beats[4] = ((0, wav_dict["snare"], 9),)
+        beats[6] = ((0, wav_dict["snare"], 9),)
+    """
+    print(f"\n\n load_beats_for_patterns...")
+
+    result = {}
+
+    for pattern_name, pattern_dict in setup["patterns"].items():
+
+        print(f"loading pattern '{pattern_name}', {pattern_dict=}")
+        tracks = []
+        for v, p in pattern_dict.items():
+            print(f" ** parse {v}, {p}")
+            tracks.append(make_beats(v, p))
+
+        # take vertical slices from tracks into the beats
+        beats = tracks_to_beats(tracks)
+        result[pattern_name] = beats
+
+
+    print(f"load_beats_for_patterns returning hardcoded test data")
+
+    beats = [()] * 16
+    beats[0] = ((0, wav_dict["snare"], 5),  (0, wav_dict["kick"], 9))
+    beats[4] = ((0, wav_dict["snare"], 9),)
+    beats[6] = ((0, wav_dict["snare"], 9),)
+
+    # The list of "beats" for each 16th note:
+    # a beat is a list of (mixer channel, wav, volume) for as many channels as are playing
+    return beats
+
+
+def select_pattern(pattern_dict, pattern_name):
+    return pattern_dict[pattern_name]
 
 
 ###########################################################3
@@ -191,9 +265,14 @@ if setup is None: # shouldn't happen with GUI
     sys.exit()
 
 n_voices, wav_dict = load_kit(setup, setup_to_use)
-patterns = load_patterns(setup)
 
-beats = load_beats_for_patterns("main_a", wav_dict, patterns)
+# # Load the patterns for this setup
+# patterns = load_patterns(setup)
+
+# Load the beats for this pattern
+beats = load_beats_for_patterns(setup, wav_dict)
+
+pattern = select_pattern(beats, pattern_name)
 
 audio, mixer = init_audio(n_voices)
 
