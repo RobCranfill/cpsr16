@@ -39,7 +39,7 @@ print(f"**** {supervisor.runtime.autoreload=}\n")
 
 
 def read_json(filename):
-    """Returns the de-JSON-ed data, basically."""
+    """Returns the de-JSON-ed data."""
 
     with open(filename) as f:
         data = f.read()
@@ -67,44 +67,6 @@ def init_audio(n_voices):
     return au, mx
 
 
-# we no longer have 'tracks'...
-
-# def load_wavs(tracks):
-#     print(f"Loading wav files for '{pattern_name}'...")
-#     wav_list = []
-#     for track in tracks:
-#         filename = track["wav"]
-#         print(f"  - loading {filename}...")
-#         wav_list.append(audiocore.WaveFile(open(filename,"rb")))
-#     print(" * wav files loaded ok!")
-#     return wav_list
-
-
-def make_beats_old(tracks):
-    # Construct a list of list of each voice & volume to use for each beat (and sub-beat)
-    # so that item i has all the (track,volume) pairs for beat i
-    beat_list = [None] * 16
-    j = -1 # The input is broken into 4-char chunks for readability; j is index into string.
-    for beat in range(16):
-        beat_list[beat] = []
-        if beat % 4 == 0:
-            j += 1
-        # print(f"Looking at {beat}/{j}...")
-        i_track = 0
-        for track in tracks:
-            beat_char = track["pattern"][j]
-            if beat_char != "-":
-                # print(f"  beat at {beat}/{j} from {track["pattern"]} = {beat_char}")
-                track_and_volume = (i_track, int(beat_char))
-                # print(f" - adding {track_and_volume}")
-                beat_list[beat].append(track_and_volume)
-            i_track += 1
-        j += 1
-
-    print(f"{beat_list=}")
-    return beat_list
-
-
 def load_setup(setups, setup_name):
     """Find and return the indicated setup, or None."""
     setup = None
@@ -120,7 +82,6 @@ def load_kit(setup, setup_name):
     Load the wave files for the kit and assign mixer channels.
     Return dict of {pad_name: (chan,wav), ...}.
     """
-
     kit = setup["kit"]
     print(f"Loading {len(kit)} wav files for '{setup_name}'...")
     wavs = {}
@@ -151,14 +112,6 @@ def get_setup_names(setups):
     return names
 
 
-def parse_pattern_track():
-    """Return one track list, like one beat in a beat list."""
-    print("parse_pattern_track")
-
-# def tracks_to_beats():
-#     print("tracks_to_beats")
-
-
 def make_beats(pad_name, beat_pattern, channel):
     """"
     Given the pad name and beat pattern, add all non-zero hits to a list of hits.
@@ -182,7 +135,7 @@ def make_beats(pad_name, beat_pattern, channel):
             # print(f" - added {beat_list[beat]}")
         j += 1
 
-    print(f"    {beat_list=}\n")
+    # print(f"    {beat_list=}\n")
     return beat_list
 
 
@@ -229,32 +182,27 @@ def load_beats_for_patterns(setup, wav_table):
         print(f" - {tracks=}")
 
         # take vertical slices from tracks into the beats
-        # beats = tracks_to_beats(tracks)
-        # all_beats[pattern_name] = beats
-        # print(f" - all_beats now {all_beats}")
 
-        # TODO: 16?
-        track_hits = list(range(16))
-        for i in range(16):
-            track_hits[i] = []
+        # Note: LESSON LEARNED
+        # The following is right; what was wrong was
+        #   track_hits = [[]] * 16
+        #  
+        track_hits = [[] for _ in range(16)]
 
         for t in range(len(tracks)):
             for b in range(len(tracks[t])):
                 new_hit = tracks[t][b]
-                print(f" looking at {new_hit=}")
+                # print(f" looking at {new_hit=}")
                 if len(new_hit) > 0:
-                    print(f" > append {new_hit=}]to track_hits[{b}]")
+                    # print(f" > append {new_hit=}]to track_hits[{b}]")
                     track_hits[b].append(new_hit)
-                    print(f" > now track_hits[{b}] = {track_hits[b]}")
+                    # print(f" > now track_hits[{b}] = {track_hits[b]}")
 
         all_beats[pattern_name] = track_hits
 
     print(f"\n\n *** load_beats_for_patterns returning \n{all_beats}\n")
     return all_beats
 
-
-def select_pattern(pattern_dict, pattern_name):
-    return pattern_dict[pattern_name]
 
 
 ###########################################################
@@ -283,7 +231,7 @@ def main():
         print(f"\n!!! Can't find setup {setup_to_use}")
         sys.exit()
 
-    # Load the wavs for the pads.
+    # Load the wavs for the pads
     wavs_for_channels = load_kit(setup, setup_to_use)
     wav_table = [None] * len(wavs_for_channels)
     for k, v in wavs_for_channels.items():
@@ -293,19 +241,14 @@ def main():
         wav_table[chan] = wav
     # print(f" * built wave table: {wav_table}")
 
-    # # Load the patterns for this setup
-    # patterns = load_patterns(setup)
+    audio, mixer = init_audio(len(wavs_for_channels))
 
     # Load the beats for all patterns
     beats = load_beats_for_patterns(setup, wavs_for_channels)
 
     pattern_name = "main_a" # to start
-    pattern = select_pattern(beats, pattern_name)
+    pattern = beats[pattern_name]
 
-    audio, mixer = init_audio(len(wavs_for_channels))
-
-    # print("\nStopping for debug!")
-    # sys.exit()
 
 
     # 120 BPM, sorta
@@ -326,7 +269,6 @@ def main():
         #     continue
 
         for hit_list in pattern:
-            print(f"{hit_list=}")
 
             if len(hit_list) > 0:
                 print(f" BEAT '{BEAT_NAMES[b]}': {hit_list=}")
@@ -339,8 +281,7 @@ def main():
 
                         wav = wav_table[channel]
 
-                        # channel, wav, volume = hit_tuple
-                        print(f"  {channel=}, {wav=}, {volume=}")
+                        print(f"  {channel=}@{volume=}")
 
                         if volume != 0:
                             # print(f"     playing {track_index=} @ {volume=} ")
@@ -359,10 +300,10 @@ def main():
             b = (b+1) % 16
 
             time.sleep(SLEEP_TIME)
-            print("STOPPING 1")
-            break
+            # print("\n**** STOPPING after 1 beat")
+            # break
 
-        print("STOPPING 2")
+        print("\n**** STOPPING after 1 measure")
         break
 
 # Let's do it!
