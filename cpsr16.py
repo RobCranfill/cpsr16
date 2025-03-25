@@ -117,7 +117,7 @@ def make_beats(pad_name, beat_pattern, channel):
     Given the pad name and beat pattern, add all non-zero hits to a list of hits.
     Return a 16-slot list of beats like (channel, vol) for this pad.
     """
-    print(f"   make_beats for pad '{pad_name}': '{beat_pattern}'")
+    # print(f"   make_beats for pad '{pad_name}': '{beat_pattern}'")
 
     beat_list = [()] * 16
     j = -1 # The input is broken into 4-char chunks for readability; j is index into beat_pattern string.
@@ -164,29 +164,29 @@ def load_beats_for_patterns(setup, wav_table):
           ...
         )
     """
-    print(f"\n\n load_beats_for_patterns...\n")
+    # print(f"load_beats_for_patterns...")
 
     all_beats = {}
-
     for pattern_name, pattern_dict in setup["patterns"].items():
 
-        print(f"\n - loading pattern '{pattern_name}' from {pattern_dict=}")
+        # print(f" - loading pattern '{pattern_name}' from {pattern_dict=}")
         tracks = []
 
         for voice, patt in pattern_dict.items():
-
             channel = wav_table[voice][0]
             tracks.append(make_beats(voice, patt, channel))
             # print(f"  > tracks now {tracks}")
 
-        print(f" - {tracks=}")
+        # print(f"load_beats_for_patterns: - {tracks=}")
 
         # take vertical slices from tracks into the beats
 
         # Note: LESSON LEARNED
         # The following is right; what was wrong was
         #   track_hits = [[]] * 16
-        #  
+        #  which is a list of *the same object*
+        #  and does very weird stuff! :-/
+        #
         track_hits = [[] for _ in range(16)]
 
         for t in range(len(tracks)):
@@ -200,7 +200,7 @@ def load_beats_for_patterns(setup, wav_table):
 
         all_beats[pattern_name] = track_hits
 
-    print(f"\n\n *** load_beats_for_patterns returning \n{all_beats}\n")
+    print(f"  * load_beats_for_patterns returning \n{all_beats}\n")
     return all_beats
 
 
