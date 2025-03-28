@@ -51,8 +51,7 @@ def read_json(filename):
 
 
 def init_audio(n_voices):
-    """Return (audio, mixer)"""
-    # We must also return the "audio" object so it doesn't get garbage collected!
+    """Return (audio, mixer); audio object only so it doesn't get GCed."""
 
     au = audiobusio.I2SOut(
         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
@@ -63,7 +62,8 @@ def init_audio(n_voices):
                             bits_per_sample=16, samples_signed=True)
 
     au.play(mx) # attach mixer to audio playback
-    print("  OK!")
+
+    # We must also return the "audio" object so it doesn't get garbage collected!
     return au, mx
 
 
@@ -246,18 +246,17 @@ def main():
     # Load the beats for all patterns
     beats = load_beats_for_patterns(setup, wavs_for_channels)
 
-    pattern_name = "main_a" # to start
-    pattern = beats[pattern_name]
-
-
+    # to start
+    pattern = beats["main_a"]
+    print(f"\nPattern: {pattern}\n")
 
     # 120 BPM, sorta
     SLEEP_TIME = 1/8
 
     # this is just for printing the nice beat name like "one" or "and"
-    b = 0
+    beat = 0
 
-    print(f"\n----------------- Starting beat loop for {pattern_name=}-----------------\n")
+    k = 0 # for debug, test
 
     playing = True
     while True:
@@ -268,11 +267,23 @@ def main():
         #     playing = check_gesture(gesture_sensor)
         #     continue
 
-        for hit_list in pattern:
+        # for hit_list in pattern:
+        for beat in range(16):
+
+            hit_list = pattern[beat]
+            print(f"  Hit list: {hit_list}")
+
+            k = k + 1
+            if k == 40:
+                print("\n *** switching pattern!\n")
+                pattern = beats["main_b"]
+                hit_list = pattern[beat]
+                print(f"  Hit list now: {hit_list}")
 
             if len(hit_list) > 0:
-                print(f" BEAT '{BEAT_NAMES[b]}': {hit_list=}")
-                
+                print(f" BEAT '{BEAT_NAMES[beat]}': {hit_list=}")
+                beat = (beat+1) % 16
+
                 # for channel, volume in hit_list:
                 for cv_tuple in hit_list:
                     if len(cv_tuple) == 2:
@@ -281,7 +292,7 @@ def main():
 
                         wav = wav_table[channel]
 
-                        print(f"  {channel=}@{volume=}")
+                        print(f"  {channel=} @{volume=}")
 
                         if volume != 0:
                             # print(f"     playing {track_index=} @ {volume=} ")
@@ -297,14 +308,13 @@ def main():
                             mixer.voice[channel].level = volume/9
                             mixer.voice[channel].play(wav)
 
-            b = (b+1) % 16
 
             time.sleep(SLEEP_TIME)
             # print("\n**** STOPPING after 1 beat")
             # break
 
-        print("\n**** STOPPING after 1 measure")
-        break
+        # print("\n**** STOPPING after 1 measure")
+        # break
 
 # Let's do it!
 main()
