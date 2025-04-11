@@ -22,6 +22,8 @@ import keypad
 from digitalio import DigitalInOut, Pull
 import adafruit_debouncer
 
+from DM_proxy import DM_proxy
+
 
 # TODO: make this a variable?
 # kind of a misnomer; should be ticks_per_measure, or something.
@@ -129,16 +131,16 @@ def load_setup(setups, setup_name):
     return setup
 
 
-def load_kit(setup, setup_name):
+def load_pads(setup, setup_name):
     """
-    Load the wave files for the kit and assign mixer channels.
+    Load the wave files for the pads and assign mixer channels.
     Return dict of {pad_name: (chan,wav), ...}.
     """
-    kit = setup["kit"]
-    print(f"Loading {len(kit)} wav files for '{setup_name}'...")
+    pads = setup["pads"]
+    print(f"Loading {len(pads)} wav files for '{setup_name}'...")
     wavs = {}
     channel = 0
-    for pad_name, filename in kit.items():
+    for pad_name, filename in pads.items():
         print(f"  - loading '{pad_name}' from '{filename}'...")
 
         # TODO: catch exception?
@@ -191,7 +193,7 @@ def make_beats(pad_name, beat_pattern, channel):
     return beat_list
 
 
-def load_beats_for_patterns(setup, wav_table):
+def load_beats_for_patterns(setup, wav_dict):
     """Load all the beats for all the patterns, so we are ready to switch as needed."""
 
     """
@@ -201,7 +203,8 @@ def load_beats_for_patterns(setup, wav_table):
        ...
        }
     where beats are like:
-        beats = ((),) * BEATS_PER_MEASURE
+        beats = ((),) * BEATS_PER_MEASURE 
+           containing, say:
         beats[0] = ((0, wav_dict["snare"], 5),  (0, wav_dict["kick"], 9))
         beats[4] = ((0, wav_dict["snare"], 9))
         beats[6] = ((0, wav_dict["snare"], 9))
@@ -225,7 +228,7 @@ def load_beats_for_patterns(setup, wav_table):
         tracks = []
 
         for voice, patt in pattern_dict.items():
-            channel = wav_table[voice][0]
+            channel = wav_dict[voice][0]
             tracks.append(make_beats(voice, patt, channel))
             # print(f"  > tracks now {tracks}")
 
@@ -261,10 +264,14 @@ def handle_events(drum_machine, switch_list):
     event = switch_list.events.get()
     # event will be None if nothing has happened.
     if event:
-        print(f" ***** {event}")
+        # print(f" ***** {event}")
         if event.pressed and event.key_number == 0:
             drum_machine.set_playing(not drum_machine.is_playing())
-            print(f" set dm to {drum_machine.is_playing()=}")
+            print(f" toggled dm to {drum_machine.is_playing()=}")
+
+        elif event.pressed and event.key_number == 1:
+            print(f" INTRO/END")
+            drum_machine.next_pattern()
 
 
 
@@ -272,36 +279,40 @@ def handle_events(drum_machine, switch_list):
 
 def main():
 
-    import DM_state
-    dm = DM_state.DM_state()
+    # import DM_state
+    # dm = DM_state.DM_state()
 
     # switches = init_footswitch_debouncer()
     switches = init_footswitch()
 
-    # TODO: needed? "Wait a little bit so USB can stabilize and not glitch audio"
+    # "Wait a little bit so USB can stabilize and not glitch audio"
+    # TODO: needed? 
     time.sleep(2)
 
     # TODO: Handle malformed data?
-    setups = read_json(DATA_FILE_NAME)
-    if len(setups) == 0:
+    all_setups = read_json(DATA_FILE_NAME)
+    if len(all_setups) == 0:
         print("\nGotta have some data!")
         sys.exit()
-    # print(f" ! setups: {setups}")
+    # print(f" ! setups: {all_setups}")
 
     # for future use in UI?
-    setup_name_list = get_setup_names(setups)
+    setup_name_list = get_setup_names(all_setups)
+
+
+########## from here we are working with one 'setup' at a time.
+########## in part (mainly?) because we only want to load these WAV files.
 
     # TODO: select via UI
-    setup_to_use = setup_name_list[0] # "Boom-Chuck"
-
-    setup = load_setup(setups, setup_to_use)
-
-    if setup is None: # shouldn't happen with GUI
-        print(f"\n!!! Can't find setup {setup_to_use}")
+    setup_name = setup_name_list[0] # "Boom-Chuck" for testing
+    this_setup = load_setup(all_setups, setup_name)
+    if this_setup is None: # shouldn't happen with GUI
+        print(f"\n!!! Can't find setup {setup_name}")
         sys.exit()
 
+
     # Load the wavs for the pads
-    wavs_for_channels = load_kit(setup, setup_to_use)
+    wavs_for_channels = load_pads(this_setup, setup_name)
     wav_table = [None] * len(wavs_for_channels)
     for k, v in wavs_for_channels.items():
         # print(f" -> {k} = {v}")
@@ -310,18 +321,34 @@ def main():
         wav_table[chan] = wav
     # print(f" * built wave table: {wav_table}")
 
+    # Allocate a mixer with just enough channels.
+    # We only get the audio object so it won't get GCed. :-/
     audio, mixer = init_audio(len(wavs_for_channels))
 
-    # Load the beats for all patterns
-    beats = load_beats_for_patterns(setup, wavs_for_channels)
+    # Load the beats for all patterns for this setup.
+    # FIXME: we could do this inside the DM object but that needs the WAV stuff. :-/
+    all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
 
-    # to start
-    pattern = beats["main_a"]
-    print(f"\nPattern: {pattern}\n")
+# --- old
+    # # to start
+    # PATTERN_NAME = "main_a" # FIXME
+    # pattern = beats[PATTERN_NAME]
+    # print(f"\nPattern: {pattern}\n")
 
-    # 120 BPM, sorta
+    # # init the state machine
+    # dm.set_pattern(PATTERN_NAME)
+# --- old
+
+    # Init a drum machine with all the beats, which are the sliced patterns.
+    # This will automatically select pattern_beatsthe first pattern. (FIXME: the pattern state machine should do this)
+    dm = DM_proxy(all_beats)
+    pattern_name, pattern_beats = dm.get_current_pattern_beats()
+    print(f" *** got {pattern_name=}: {pattern_beats=}")
+
+
+    # 1/4 = 120 BPM, sorta
     # TODO: obviusly needs to be variable - how?
-    SLEEP_TIME = 1/8
+    SLEEP_TIME = 1/4
 
     # this is just for printing the nice beat name like "one" or "and"
     beat = 0
@@ -332,11 +359,10 @@ def main():
     while True:
 
         if not dm.is_playing():
+
             # print("not playing")
             time.sleep(NOT_PLAYING_DELAY)
-
             handle_events(dm, switches)
-
             continue
 
         # for debouncer approach - no good?
@@ -358,21 +384,21 @@ def main():
         for beat in range(BEATS_PER_MEASURE):
 
             handle_events(dm, switches)
-            if not dm.is_playing: # uh, what?
+            if not dm.is_playing(): # uh, what?
                 break
 
-            hit_list = pattern[beat]
-            print(f"  Hit list: {hit_list}")
+            hit_list = pattern_beats[beat]
+            # print(f"  Hit list: {hit_list}")
 
-            k = k + 1
-            if k == 40:
-                print("\n *** switching pattern!\n")
-                pattern = beats["main_b"]
-                hit_list = pattern[beat]
-                print(f"  Hit list now: {hit_list}")
+            # k = k + 1
+            # if k == 40:
+            #     print("\n *** switching pattern!\n")
+            #     pattern = beats["main_b"]
+            #     hit_list = pattern[beat]
+            #     print(f"  Hit list now: {hit_list}")
 
             if len(hit_list) > 0:
-                print(f" BEAT '{BEAT_NAMES[beat]}': {hit_list=}")
+                print(f" BEAT #{beat}: '{BEAT_NAMES[beat]}': {hit_list=}")
                 beat = (beat+1) % BEATS_PER_MEASURE
 
                 # for channel, volume in hit_list:
