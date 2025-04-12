@@ -32,8 +32,11 @@ BEATS_PER_MEASURE = 16
 
 DATA_FILE_NAME = "rhythms.dict"
 
-NOT_PLAYING_DELAY = 0.1
+# idle loop hander delay
+NOT_PLAYING_DELAY = 0.01
 
+
+# TODO: put h/w config stuff in config file??
 
 # for I2S audio with external I2S DAC board
 
@@ -270,8 +273,8 @@ def handle_events(drum_machine, switch_list):
             print(f" toggled dm to {drum_machine.is_playing()=}")
 
         elif event.pressed and event.key_number == 1:
-            print(f" INTRO/END")
-            drum_machine.next_pattern()
+            print(f" ** COUNT/FILL")
+            return drum_machine.go_to_next_pattern()
 
 
 
@@ -310,7 +313,6 @@ def main():
         print(f"\n!!! Can't find setup {setup_name}")
         sys.exit()
 
-
     # Load the wavs for the pads
     wavs_for_channels = load_pads(this_setup, setup_name)
     wav_table = [None] * len(wavs_for_channels)
@@ -329,18 +331,11 @@ def main():
     # FIXME: we could do this inside the DM object but that needs the WAV stuff. :-/
     all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
 
-# --- old
-    # # to start
-    # PATTERN_NAME = "main_a" # FIXME
-    # pattern = beats[PATTERN_NAME]
-    # print(f"\nPattern: {pattern}\n")
-
-    # # init the state machine
-    # dm.set_pattern(PATTERN_NAME)
-# --- old
 
     # Init a drum machine with all the beats, which are the sliced patterns.
-    # This will automatically select pattern_beatsthe first pattern. (FIXME: the pattern state machine should do this)
+    #
+    # This will automatically select the first pattern. FIXME: the pattern state machine should do this.
+    #
     dm = DM_proxy(all_beats)
     pattern_name, pattern_beats = dm.get_current_pattern_beats()
     print(f" *** got {pattern_name=}: {pattern_beats=}")
@@ -358,6 +353,7 @@ def main():
     playing = True
     while True:
 
+        # Idle handler
         if not dm.is_playing():
 
             # print("not playing")
@@ -365,27 +361,16 @@ def main():
             handle_events(dm, switches)
             continue
 
-        # for debouncer approach - no good?
-        #
-        # for switch in switches:
-        #     switch.update()
-        #     if switch.rose:
-        #         print(f"\n\n\n{switch} rose!\n\n\n")
-        #     elif switch.fell:
-        #         print(f"{switch} fell!")
-        #     elif switch.long_press:
-        #         print("Long Press")
-        #     elif switch.short_count != 0:
-        #         print("Short Press Count =", switch.short_count)
-        #     elif switch.long_press and switch.short_count == 1:
-        #         print("That's a long double press !")
-
         # for hit_list in pattern:
         for beat in range(BEATS_PER_MEASURE):
 
-            handle_events(dm, switches)
-            if not dm.is_playing(): # uh, what?
+            new_beats = handle_events(dm, switches)
+            if not dm.is_playing():
                 break
+            
+            if new_beats is not None:
+                pattern_beats = new_beats
+                print(f" -> switch beat {beat} of pattern {pattern_beats}")
 
             hit_list = pattern_beats[beat]
             # print(f"  Hit list: {hit_list}")
