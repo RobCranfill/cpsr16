@@ -79,7 +79,7 @@ def init_audio(n_voices):
     au = audiobusio.I2SOut(
         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
 
-    print(f"Creating mixer with {n_voices} voices....")
+    # print(f"Creating mixer with {n_voices} voices....")
     mx = audiomixer.Mixer(voice_count=n_voices,
                             sample_rate=22050, channel_count=2,
                             bits_per_sample=16, samples_signed=True)
@@ -140,32 +140,33 @@ def load_pads(setup, setup_name):
     Return dict of {pad_name: (chan,wav), ...}.
     """
     pads = setup["pads"]
-    print(f"Loading {len(pads)} wav files for '{setup_name}'...")
+
+    # print(f"Loading {len(pads)} wav files for '{setup_name}'...")
+
     wavs = {}
     channel = 0
     for pad_name, filename in pads.items():
-        print(f"  - loading '{pad_name}' from '{filename}'...")
+        # print(f"  - loading '{pad_name}' from '{filename}'...")
 
         # TODO: catch exception?
         wav = audiocore.WaveFile(open(filename,"rb"))
         wavs[pad_name] = (channel, wav)
         channel += 1
 
-    print(f"  * {len(wavs)} wav files loaded ok!")
-    print(f"  * {wavs=}")
+    # print(f"  * {len(wavs)} wav files loaded ok!")
+    # print(f"  * {wavs=}")
 
     return wavs
 
 
 def get_setup_names(setups):
     """For GUI?"""
-    print("----- setups -----")
+    print("---- setups ----")
     names = []
     for s in setups:
         name = s["setup"]
         print(f"\t{name}")
         names.append(name)
-    print()
     return names
 
 
@@ -258,7 +259,7 @@ def load_beats_for_patterns(setup, wav_dict):
 
         all_beats[pattern_name] = track_hits
 
-    print(f"  * load_beats_for_patterns returning \n{all_beats}\n")
+    # print(f"  * load_beats_for_patterns returning \n{all_beats}")
     return all_beats
 
 
@@ -354,12 +355,17 @@ def main():
 
     while True:
 
+        # Handle not-playing stuff: start, or tempo tap
+        #
         if not is_playing:
 
             left_button, right_button = handle_events(switches)
             if left_button:
                 is_playing = not is_playing
-                print(f" left -> {is_playing=}")
+                print(f" left -> {is_playing=}, {current_pattern_name=}")
+
+            if right_button:
+                print(" ** tempo tap not implemented yet")
 
             # Idle handler
             if not is_playing:
@@ -372,14 +378,25 @@ def main():
             for tick_number in range(TICKS_PER_MEASURE):
 
                 if tick_number == 0:
-                    print(f"Tick zero - check {advance_via_fill=}")
+                    print(f"Tick zero - {advance_via_fill=}")
+
+                    if advance_via_fill:
+                        print(" ** ADVANCE?")
+                    elif is_in_fill:
+                        # no advance - go back to main pattern
+                        if current_pattern_name == "fill_a":
+                            current_pattern_name = "main_a"
+                        else:
+                            current_pattern_name = "main_b"
+                        playing_beats = all_beats[current_pattern_name]
+
                     is_in_fill = False
                     advance_via_fill = False
 
                 left_button, right_button = handle_events(switches)
                 if left_button:
                     is_playing = not is_playing
-                    print(f" left -> {is_playing=}")
+                    print(f" left -> {is_playing=}, {current_pattern_name=}")
                     if not is_playing:
                         print("  STOPPING")
                         break
@@ -404,7 +421,7 @@ def main():
                 # print(f"  Hit list: {hit_list}")
 
                 if len(hit_list) > 0:
-                    print(f" BEAT #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
+                    print(f" {current_pattern_name} tick #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
                     tick_number = (tick_number+1) % TICKS_PER_MEASURE
 
                     for channel, volume in hit_list:
