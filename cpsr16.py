@@ -20,14 +20,16 @@ import busio
 
 import keypad
 from digitalio import DigitalInOut, Pull
-import adafruit_debouncer
 
-from DM_proxy import DM_proxy
+# from DM_proxy import DM_proxy
 
 
 # TODO: make this a variable?
-# kind of a misnomer; should be ticks_per_measure, or something.
-BEATS_PER_MEASURE = 16
+# This is the smallest note/beat we handle. 16 means sixteenth notes, etc.
+TICKS_PER_MEASURE = 16
+
+# FIXME: this only works for TICKS_PER_MEASURE = 16
+BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
 
 DATA_FILE_NAME = "rhythms.dict"
@@ -36,7 +38,7 @@ DATA_FILE_NAME = "rhythms.dict"
 NOT_PLAYING_DELAY = 0.01
 
 
-# TODO: put h/w config stuff in config file??
+# TODO: put this h/w config stuff in config file??
 
 # for I2S audio with external I2S DAC board
 
@@ -52,8 +54,6 @@ AUDIO_OUT_I2S_WORD = board.GP9
 
 SWITCH_1 = board.GP28
 SWITCH_2 = board.GP27
-
-BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
 
 import supervisor
@@ -176,12 +176,12 @@ def make_beats(pad_name, beat_pattern, channel):
     """
     # print(f"   make_beats for pad '{pad_name}': '{beat_pattern}'")
 
-    beat_list = [()] * BEATS_PER_MEASURE
+    beat_list = [()] * TICKS_PER_MEASURE
     j = -1 # The input is broken into 4-char chunks for readability; j is index into beat_pattern string.
 
     i_track = channel # OK?
 
-    for beat in range(BEATS_PER_MEASURE):
+    for beat in range(TICKS_PER_MEASURE):
         if beat % 4 == 0:
             j += 1
         # print(f"Looking at {beat=} from char {j}...")
@@ -206,7 +206,7 @@ def load_beats_for_patterns(setup, wav_dict):
        ...
        }
     where beats are like:
-        beats = ((),) * BEATS_PER_MEASURE 
+        beats = ((),) * TICKS_PER_MEASURE 
            containing, say:
         beats[0] = ((0, wav_dict["snare"], 5),  (0, wav_dict["kick"], 9))
         beats[4] = ((0, wav_dict["snare"], 9))
@@ -245,7 +245,7 @@ def load_beats_for_patterns(setup, wav_dict):
         #  which is a list of *the same object*
         #  and does very weird stuff! :-/
         #
-        track_hits = [[] for _ in range(BEATS_PER_MEASURE)]
+        track_hits = [[] for _ in range(TICKS_PER_MEASURE)]
 
         for t in range(len(tracks)):
             for b in range(len(tracks[t])):
@@ -262,20 +262,21 @@ def load_beats_for_patterns(setup, wav_dict):
     return all_beats
 
 
-def handle_events(drum_machine, switch_list):
+def handle_events(switch_list):
+    """Return (left_button, right_button) states"""
 
-    event = switch_list.events.get()
     # event will be None if nothing has happened.
+    event = switch_list.events.get()
+
+    left = False
+    right = False
     if event:
         # print(f" ***** {event}")
         if event.pressed and event.key_number == 0:
-            drum_machine.set_playing(not drum_machine.is_playing())
-            print(f" toggled dm to {drum_machine.is_playing()=}")
-
-        elif event.pressed and event.key_number == 1:
-            print(f" ** COUNT/FILL")
-            return drum_machine.go_to_next_pattern()
-
+            left = True
+        if event.pressed and event.key_number == 1:
+            right = True
+    return (left, right)
 
 
 ###########################################################
@@ -332,71 +333,85 @@ def main():
     all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
 
 
-    # Init a drum machine with all the beats, which are the sliced patterns.
-    #
-    # This will automatically select the first pattern. FIXME: the pattern state machine should do this.
-    #
-    dm = DM_proxy(all_beats)
-    pattern_name, pattern_beats = dm.get_current_pattern_beats()
-    print(f" *** got {pattern_name=}: {pattern_beats=}")
+    # 1/4 = 60 BPM, sorta
+    TICK_SLEEP_TIME = 1/4
 
 
-    # 1/4 = 120 BPM, sorta
-    # TODO: obviusly needs to be variable - how?
-    SLEEP_TIME = 1/4
+# left button is start/stop.
+# if we are stopped, right button is tempo tap
+# if we are not stopped, 
+#   if we are not in a fill, right button starts a fill.
+#   if we are in a fill, right button advances to other pattern at next tick 0.
 
-    # this is just for printing the nice beat name like "one" or "and"
-    beat = 0
+    is_playing = False
+    is_in_fill = False
+    advance_via_fill = False
 
-    k = 0 # for debug, test
+    current_pattern_name = "main_a"
+    playing_beats = all_beats[current_pattern_name]
 
-    playing = True
+    print("\n**** READY ****")
+
     while True:
 
-        # Idle handler
-        if not dm.is_playing():
+        if not is_playing:
 
-            # print("not playing")
-            time.sleep(NOT_PLAYING_DELAY)
-            handle_events(dm, switches)
-            continue
+            left_button, right_button = handle_events(switches)
+            if left_button:
+                is_playing = not is_playing
+                print(f" left -> {is_playing=}")
 
-        # for hit_list in pattern:
-        for beat in range(BEATS_PER_MEASURE):
+            # Idle handler
+            if not is_playing:
+                # print("  (idle)")
+                time.sleep(NOT_PLAYING_DELAY)
+                continue
 
-            new_beats = handle_events(dm, switches)
-            if not dm.is_playing():
-                break
-            
-            if new_beats is not None:
-                pattern_beats = new_beats
-                print(f" -> switch beat {beat} of pattern {pattern_beats}")
+        while is_playing:
 
-            hit_list = pattern_beats[beat]
-            # print(f"  Hit list: {hit_list}")
+            for tick_number in range(TICKS_PER_MEASURE):
 
-            # k = k + 1
-            # if k == 40:
-            #     print("\n *** switching pattern!\n")
-            #     pattern = beats["main_b"]
-            #     hit_list = pattern[beat]
-            #     print(f"  Hit list now: {hit_list}")
+                if tick_number == 0:
+                    print(f"Tick zero - check {advance_via_fill=}")
+                    is_in_fill = False
+                    advance_via_fill = False
 
-            if len(hit_list) > 0:
-                print(f" BEAT #{beat}: '{BEAT_NAMES[beat]}': {hit_list=}")
-                beat = (beat+1) % BEATS_PER_MEASURE
+                left_button, right_button = handle_events(switches)
+                if left_button:
+                    is_playing = not is_playing
+                    print(f" left -> {is_playing=}")
+                    if not is_playing:
+                        print("  STOPPING")
+                        break
 
-                # for channel, volume in hit_list:
-                for cv_tuple in hit_list:
-                    if len(cv_tuple) == 2:
-                        channel = cv_tuple[0]
-                        volume = cv_tuple[1]
+                if right_button:
+                    if is_in_fill:
+                        advance_via_fill = True
+                        print(f"  -> {advance_via_fill=}")
 
-                        wav = wav_table[channel]
+                    is_in_fill = True
+                    if current_pattern_name == "main_a":
+                        current_pattern_name = "fill_a"
+                    else:
+                        current_pattern_name = "fill_b"
+                    playing_beats = all_beats[current_pattern_name]
+                    print(f"  -> Switched to pattern {current_pattern_name=}")
+
+
+                # Play the current tick
+                #
+                hit_list = playing_beats[tick_number]
+                # print(f"  Hit list: {hit_list}")
+
+                if len(hit_list) > 0:
+                    print(f" BEAT #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
+                    tick_number = (tick_number+1) % TICKS_PER_MEASURE
+
+                    for channel, volume in hit_list:
 
                         # print(f"  {channel=} @{volume=}")
-
                         if volume != 0:
+
                             # print(f"     playing {track_index=} @ {volume=} ")
                             # print(f" - {mixer.voice}")
 
@@ -408,15 +423,14 @@ def main():
                             #     mixer.voice[track_index].stop()
 
                             mixer.voice[channel].level = volume/9
+                            wav = wav_table[channel]
                             mixer.voice[channel].play(wav)
 
 
-            time.sleep(SLEEP_TIME)
-            # print("\n**** STOPPING after 1 beat")
-            # break
+                time.sleep(TICK_SLEEP_TIME)
 
-        # print("\n**** STOPPING after 1 measure")
-        # break
+            # end of tick loop
+
 
 # Let's do it!
 main()
