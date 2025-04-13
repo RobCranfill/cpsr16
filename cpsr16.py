@@ -382,6 +382,13 @@ def main():
 
                     if advance_via_fill:
                         print(" ** ADVANCE?")
+                        if current_pattern_name == "fill_a":
+                            current_pattern_name = "main_b"
+                        else:
+                            current_pattern_name = "main_a"
+                        playing_beats = all_beats[current_pattern_name]
+                        print(f"  -> Advanced to pattern {current_pattern_name=}")
+        
                     elif is_in_fill:
                         # no advance - go back to main pattern
                         if current_pattern_name == "fill_a":
@@ -405,14 +412,14 @@ def main():
                     if is_in_fill:
                         advance_via_fill = True
                         print(f"  -> {advance_via_fill=}")
-
-                    is_in_fill = True
-                    if current_pattern_name == "main_a":
-                        current_pattern_name = "fill_a"
                     else:
-                        current_pattern_name = "fill_b"
-                    playing_beats = all_beats[current_pattern_name]
-                    print(f"  -> Switched to pattern {current_pattern_name=}")
+                        is_in_fill = True
+                        if current_pattern_name == "main_a":
+                            current_pattern_name = "fill_a"
+                        else:
+                            current_pattern_name = "fill_b"
+                        playing_beats = all_beats[current_pattern_name]
+                        print(f"  -> Switched to pattern {current_pattern_name=}")
 
 
                 # Play the current tick
