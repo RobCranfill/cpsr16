@@ -353,6 +353,12 @@ def main():
     current_pattern_name = "main_a"
     playing_beats = all_beats[current_pattern_name]
 
+    import Display_text
+    display = Display_text.Display_text()
+    display.show_pattern_name(current_pattern_name)
+    display.show_beat_number(0)
+    display.render()
+
     print("\n**** READY ****")
 
     while True:
