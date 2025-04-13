@@ -337,6 +337,8 @@ def main():
     # 1/4 = 60 BPM, sorta
     TICK_SLEEP_TIME = 1/4
 
+    last_tempo_tap = 0
+
 
 # left button is start/stop.
 # if we are stopped, right button is tempo tap
@@ -365,7 +367,16 @@ def main():
                 print(f" left -> {is_playing=}, {current_pattern_name=}")
 
             if right_button:
-                print(" ** tempo tap not implemented yet")
+                if last_tempo_tap == 0:
+                    last_tempo_tap = time.monotonic_ns()
+                else:
+                    now = time.monotonic_ns()
+                    delta = now - last_tempo_tap 
+                    last_tempo_tap = now
+                    TICK_SLEEP_TIME = delta / 1000000000
+                    TICK_SLEEP_TIME /= 2
+
+                    print(f" ** tempo tap {TICK_SLEEP_TIME=}")
 
             # Idle handler
             if not is_playing:
