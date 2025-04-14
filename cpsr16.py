@@ -423,6 +423,11 @@ def main():
                     print(f" left -> {is_playing=}, {current_pattern_name=}")
                     if not is_playing:
                         print("  STOPPING")
+
+                        # right?
+                        current_pattern_name = "main_a"
+                        playing_beats = all_beats[current_pattern_name]
+
                         break
 
                 if right_button:

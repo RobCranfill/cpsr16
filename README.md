@@ -4,21 +4,26 @@
 
 Many sounds from https://freesound.org/
 
+
+## Features
+ * Two-button foot switch: Start/Stop ("SS", on left) and Count/Fill ("CF", on right).
+   * If DM is stopped, pressing SS starts PATTERN A.
+   * If DM is stopped, pressing CF more than once sets tempo.
+   * If DM is playing a pattern (not a fill; see below), SS will stop play immediately.
+   * Fill
+     * As soon as you press CF, the FILL X takes over from PATTERN X and plays until the end of the fill.
+     * Normally after playing FILL X, it will revert back to PATTERN X.
+     * If a fill is playing and the Count/Fill button is pressed again, after playing FILL X, it will transition to PATTERN Y.
+     * TODO: If DM is *IN A FILL*, pressing SS will stop after playing FILL X (where "X" is the current pattern).
+
+
+
 ## Notes
 Convert files to appropriate WAV format (mono, 22050 Hz, 16-bit signed) with command:
 
 <code>
 sox {original_file}.mp3 -b 16 -c 1 -r 22050 {output_file}.wav
 </code>
-
-
-## To-Do
-* Lidar-based start/stop/fill!
-  * this seems cool, but a footswitch may be more practical :-/
-  * gotta try it anyway!
-
-* Build bigger patterns from little ones. (Need better terminology)
-* Option for fills, intros, outros.
 
 
 # Notes from SR-16 manual
@@ -86,3 +91,5 @@ This structure makes it possible to put together songs in minutes using the Pres
 makes it easy to play drum parts live. For example, if there's a solo happening over the A Main
 Pattern, you can keep the Pattern repeating until the solo is about to end, at which point you
 select the Fill that leads out of the A Main Pattern.
+
+
