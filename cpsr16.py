@@ -47,7 +47,7 @@ NOT_PLAYING_DELAY = 0.01
 # AUDIO_OUT_I2S_DATA = board.D11
 # AUDIO_OUT_I2S_WORD = board.D10
 
-# for Pico
+# for RP Pico
 AUDIO_OUT_I2S_BIT  = board.GP8
 AUDIO_OUT_I2S_DATA = board.GP10
 AUDIO_OUT_I2S_WORD = board.GP9
@@ -88,34 +88,6 @@ def init_audio(n_voices):
 
     # We must also return the "audio" object so it doesn't get garbage collected!
     return au, mx
-
-def init_footswitch_debouncer():
-
-    PINS = (
-        SWITCH_1,
-        SWITCH_2
-        )
-
-    keys = []
-    for pin in PINS:
-        dio = DigitalInOut(pin)
-        dio.pull = Pull.UP
-        keys.append(adafruit_debouncer.Button(dio))
-
-    k = 0
-    print("\nlooking at footswitch....")
-    while k < 10:
-    # while True:
-        # print(k)
-        for i in range(len(PINS)):
-            keys[i].update()
-            if keys[i].fell:
-                print(f"fell! {PINS[i]}")
-                k += 1
-            elif keys[i].rose:
-                print(f"rose! {PINS[i]}")
-                k += 1
-    return keys
 
 
 def init_footswitch():
@@ -284,10 +256,6 @@ def handle_events(switch_list):
 
 def main():
 
-    # import DM_state
-    # dm = DM_state.DM_state()
-
-    # switches = init_footswitch_debouncer()
     switches = init_footswitch()
 
     # "Wait a little bit so USB can stabilize and not glitch audio"
@@ -334,7 +302,7 @@ def main():
     all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
 
 
-    # 1/4 = 60 BPM, sorta
+    # 1/4 = 60 BPM
     TICK_SLEEP_TIME = 1/4
 
     last_tempo_tap = 0
@@ -381,6 +349,10 @@ def main():
                     last_tempo_tap = now
                     TICK_SLEEP_TIME = delta / 1000000000
                     TICK_SLEEP_TIME /= 2
+
+                    # sanity check - ridiculously slow
+                    if TICK_SLEEP_TIME > 1:
+                        TICK_SLEEP_TIME = 1
 
                     print(f" ** tempo tap {TICK_SLEEP_TIME=}")
 
@@ -472,7 +444,9 @@ def main():
                             wav = wav_table[channel]
                             mixer.voice[channel].play(wav)
 
-
+                # FIXME: instead of just sleeping for the full time,
+                # incorporate this into a loop, above, around the button-check stuff.
+                #
                 time.sleep(TICK_SLEEP_TIME)
 
             # end of tick loop

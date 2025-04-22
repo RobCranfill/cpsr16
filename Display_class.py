@@ -1,5 +1,6 @@
 
 class Display_class:
+    '''Being a superclass for any display.'''
 
     def __init__(self):
         self._pattern_name = ""

@@ -2,6 +2,7 @@
 import Display_class
 
 class Display_text(Display_class.Display_class):
+    '''Being a simple stdout-based display'''
 
     def render(self):
         print(f"+--------------------------------------+")
