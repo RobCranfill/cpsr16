@@ -115,6 +115,9 @@ def load_pads(setup, setup_name):
 
     # print(f"Loading {len(pads)} wav files for '{setup_name}'...")
 
+    m1 = get_free_mem()
+    print(f"load_pads: Free mem before: {m1}")
+
     wavs = {}
     channel = 0
     for pad_name, filename in pads.items():
@@ -125,8 +128,11 @@ def load_pads(setup, setup_name):
         wavs[pad_name] = (channel, wav)
         channel += 1
 
-    # print(f"  * {len(wavs)} wav files loaded ok!")
+    print(f"  * {len(wavs)} wav files loaded ok!")
     # print(f"  * {wavs=}")
+
+    m2 = get_free_mem()
+    print(f"load_pads:  Free mem after: {m2} - delta = {m1-m2}")
 
     return wavs
 
@@ -252,10 +258,28 @@ def handle_events(switch_list):
     return (left, right)
 
 
+def get_free_mem():
+    gc.collect()
+    return gc.mem_free()
+
+
+def test_dummy():
+    """I did not realize this! :-/ """
+    for x in range(10):
+        print(f"natural {x=}")
+        x = (x+1) % 7
+        print(f"  mod to {x=}")
+
+
 ###########################################################
 
 def main():
 
+    # ya learn something new every other day!
+    # test_dummy()
+
+    print(f"Free mem at start: {get_free_mem()}")
+    
     switches = init_footswitch()
 
     # "Wait a little bit so USB can stabilize and not glitch audio"
@@ -295,6 +319,8 @@ def main():
 
     # Allocate a mixer with just enough channels.
     # We only get the audio object so it won't get GCed. :-/
+    m1 = get_free_mem()
+
     audio, mixer = init_audio(len(wavs_for_channels))
 
     # Load the beats for all patterns for this setup.
@@ -310,7 +336,7 @@ def main():
 
 # left button is start/stop.
 # if we are stopped, right button is tempo tap
-# if we are not stopped, 
+# if we are not stopped,
 #   if we are not in a fill, right button starts a fill.
 #   if we are in a fill, right button advances to other pattern at next tick 0.
 
@@ -367,10 +393,10 @@ def main():
             for tick_number in range(TICKS_PER_MEASURE):
 
                 if tick_number == 0:
-                    print(f"Tick zero - {advance_via_fill=}")
+                    # print(f"Tick zero - {advance_via_fill=}")
 
                     if advance_via_fill:
-                        print(" ** ADVANCE?")
+                        # print(" ** advance_via_fill!")
                         if current_pattern_name == "fill_a":
                             current_pattern_name = "main_b"
                         else:
@@ -385,6 +411,7 @@ def main():
                         else:
                             current_pattern_name = "main_b"
                         playing_beats = all_beats[current_pattern_name]
+                        print(f"  -> Reverted to pattern {current_pattern_name=}")
 
                     is_in_fill = False
                     advance_via_fill = False
@@ -405,7 +432,7 @@ def main():
                 if right_button:
                     if is_in_fill:
                         advance_via_fill = True
-                        print(f"  -> {advance_via_fill=}")
+                        print(f"  ->  Will advance to next pattern...")
                     else:
                         is_in_fill = True
                         if current_pattern_name == "main_a":
@@ -422,8 +449,7 @@ def main():
                 # print(f"  Hit list: {hit_list}")
 
                 if len(hit_list) > 0:
-                    print(f" {current_pattern_name} tick #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
-                    tick_number = (tick_number+1) % TICKS_PER_MEASURE
+                    # print(f" {current_pattern_name} tick #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
 
                     for channel, volume in hit_list:
 
