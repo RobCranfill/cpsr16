@@ -13,9 +13,12 @@ Many sounds from https://freesound.org/
    * Fill
      * As soon as you press CF, the FILL X takes over from PATTERN X and plays until the end of the fill.
      * Normally after playing FILL X, it will revert back to PATTERN X.
-     * If a fill is playing and the Count/Fill button is pressed again, after playing FILL X, it will transition to PATTERN Y.
-     * TODO: If DM is *IN A FILL*, pressing SS will stop after playing FILL X (where "X" is the current pattern).
+     * If a fill is playing and the CF button is pressed again, after playing FILL X it will transition to PATTERN Y.
 
+
+## TO DO
+  * Is it "main_a" or "pattern_a" or "pattern a" ? etc.
+  * Make tick delay such that we look at the button many times during sleep, not just once.
 
 
 ## Notes
@@ -27,6 +30,7 @@ sox {original_file}.mp3 -b 16 -c 1 -r 22050 {output_file}.wav
 
 
 # Notes from SR-16 manual
+*This is not actually what we do, but it was the inspiration.*
 
 There are 50 of each type of Pattern, numbered 00-49. However, each numbered Pattern
 actually contains four different "sub-Patterns":
