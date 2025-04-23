@@ -21,24 +21,22 @@ import busio
 import keypad
 from digitalio import DigitalInOut, Pull
 
-# from DM_proxy import DM_proxy
 
-
-# TODO: make this a variable?
+# TODO: make this variable
 # This is the smallest note/beat we handle. 16 means sixteenth notes, etc.
 TICKS_PER_MEASURE = 16
 
 # FIXME: this only works for TICKS_PER_MEASURE = 16
 BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
-
+# The data file we read.
 DATA_FILE_NAME = "rhythms.dict"
 
 # idle loop hander delay
 NOT_PLAYING_DELAY = 0.01
 
 
-# TODO: put this h/w config stuff in config file??
+# TODO: put pin assignments in a hardware config file
 
 # for I2S audio with external I2S DAC board
 
@@ -91,7 +89,7 @@ def init_audio(n_voices):
 
 
 def init_footswitch():
-    """Using 'keypad'"""
+    """Using 'keypad' util."""
     keys = keypad.Keys((SWITCH_1,SWITCH_2), value_when_pressed=False, pull=True)
     return keys
 
@@ -242,20 +240,20 @@ def load_beats_for_patterns(setup, wav_dict):
 
 
 def handle_events(switch_list):
-    """Return (left_button, right_button) states"""
+    """Return (stop_button, fill_button) states"""
 
     # event will be None if nothing has happened.
     event = switch_list.events.get()
 
-    left = False
-    right = False
+    stop_button = False
+    fill_button = False
     if event:
         # print(f" ***** {event}")
         if event.pressed and event.key_number == 0:
-            left = True
+            stop_button = True
         if event.pressed and event.key_number == 1:
-            right = True
-    return (left, right)
+            fill_button = True
+    return (stop_button, fill_button)
 
 
 def get_free_mem():
@@ -361,12 +359,12 @@ def main():
         #
         if not is_playing:
 
-            left_button, right_button = handle_events(switches)
-            if left_button:
+            stop_button, fill_button = handle_events(switches)
+            if stop_button:
                 is_playing = not is_playing
                 print(f" left -> {is_playing=}, {current_pattern_name=}")
 
-            if right_button:
+            if fill_button:
                 if last_tempo_tap == 0:
                     last_tempo_tap = time.monotonic_ns()
                 else:
@@ -404,6 +402,10 @@ def main():
                         playing_beats = all_beats[current_pattern_name]
                         print(f"  -> Advanced to pattern {current_pattern_name=}")
         
+                        display.show_pattern_name(current_pattern_name)
+                        display.render()
+
+
                     elif is_in_fill:
                         # no advance - go back to main pattern
                         if current_pattern_name == "fill_a":
@@ -413,11 +415,14 @@ def main():
                         playing_beats = all_beats[current_pattern_name]
                         print(f"  -> Reverted to pattern {current_pattern_name=}")
 
+                        display.show_pattern_name(current_pattern_name)
+                        display.render()
+
                     is_in_fill = False
                     advance_via_fill = False
 
-                left_button, right_button = handle_events(switches)
-                if left_button:
+                stop_button, fill_button = handle_events(switches)
+                if stop_button:
                     is_playing = not is_playing
                     print(f" left -> {is_playing=}, {current_pattern_name=}")
                     if not is_playing:
@@ -429,7 +434,7 @@ def main():
 
                         break
 
-                if right_button:
+                if fill_button:
                     if is_in_fill:
                         advance_via_fill = True
                         print(f"  ->  Will advance to next pattern...")
