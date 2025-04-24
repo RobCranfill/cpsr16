@@ -1,24 +1,30 @@
 # cpsr16
-<b>CircuitPython SR16 sorta thing</b>
 
+A CircuitPython-based Drum Machine, suitable for accompanying live performaces.
 
-Many sounds from https://freesound.org/
+Inspired by the ancient and venerable Alesis SR-16 (hence the name, CircuitPython SR-16).
 
 
 ## Features
- * Two-button foot switch: Start/Stop ("SS", on left) and Count/Fill ("CF", on right).
-   * If DM is stopped, pressing SS starts PATTERN A.
+ * Two-button foot switch: Start/Stop (we will refer to as "SS", on left) and Count/Fill ("CF", on right).
    * If DM is stopped, pressing CF more than once sets tempo.
-   * If DM is playing a pattern (not a fill; see below), SS will stop play immediately.
-   * Fill
-     * As soon as you press CF, the FILL X takes over from PATTERN X and plays until the end of the fill.
-     * Normally after playing FILL X, it will revert back to PATTERN X.
-     * If a fill is playing and the CF button is pressed again, after playing FILL X it will transition to PATTERN Y.
+     ** This just uses the *last two* presses; better would be to average several.
+   * If DM is stopped, pressing SS starts pattern MAIN A.
+   * If DM is playing, pressing SS stops play immediately.
+   * Fill; if DM is playing,
+     * As soon as you press CF, FILL X takes over from MAIN X and plays until the end of the fill *plus the following fill downbeat*.
+       * The "following downbeat" is a nice feature of the SR-16; see "Notes from SR-16 manual" below.
+     * Normally after playing FILL X, DM will revert back to MAIN X.
+     * If a fill is playing and the CF button is pressed again, after playing FILL X it will transition to MAIN Y.
 
 
 ## TO DO
-  * Is it "main_a" or "pattern_a" or "pattern a" ? etc.
   * Make tick delay such that we look at the button many times during sleep, not just once.
+
+
+## Credits
+* Shout out to the wonderful Adafruit!
+* Many sounds from https://freesound.org/
 
 
 ## Notes

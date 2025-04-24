@@ -296,10 +296,10 @@ def main():
 
 
 ########## from here we are working with one 'setup' at a time.
-########## in part (mainly?) because we only want to load these WAV files.
+########## in part (mainly?) because we only want to load one set of WAV files.
 
     # TODO: select via UI
-    setup_name = setup_name_list[0] # "Boom-Chuck" for testing
+    setup_name = setup_name_list[0] # first setup, for testing
     this_setup = load_setup(all_setups, setup_name)
     if this_setup is None: # shouldn't happen with GUI
         print(f"\n!!! Can't find setup {setup_name}")
@@ -309,7 +309,6 @@ def main():
     wavs_for_channels = load_pads(this_setup, setup_name)
     wav_table = [None] * len(wavs_for_channels)
     for k, v in wavs_for_channels.items():
-        # print(f" -> {k} = {v}")
         chan = v[0]
         wav = v[1]
         wav_table[chan] = wav
@@ -341,6 +340,7 @@ def main():
     is_playing = False
     is_in_fill = False
     advance_via_fill = False
+    fill_downbeat = None
 
     current_pattern_name = "main_a"
     playing_beats = all_beats[current_pattern_name]
@@ -355,7 +355,7 @@ def main():
 
     while True:
 
-        # Handle not-playing stuff: start, or tempo tap
+        # Handle not-playing stuff: start, or tempo tap.
         #
         if not is_playing:
 
@@ -390,6 +390,8 @@ def main():
 
             for tick_number in range(TICKS_PER_MEASURE):
 
+                # Special stuff on the downbeat, the start of a measure.
+                #
                 if tick_number == 0:
                     # print(f"Tick zero - {advance_via_fill=}")
 
@@ -405,13 +407,13 @@ def main():
                         display.show_pattern_name(current_pattern_name)
                         display.render()
 
-
                     elif is_in_fill:
                         # no advance - go back to main pattern
                         if current_pattern_name == "fill_a":
                             current_pattern_name = "main_a"
                         else:
                             current_pattern_name = "main_b"
+
                         playing_beats = all_beats[current_pattern_name]
                         print(f"  -> Reverted to pattern {current_pattern_name=}")
 
@@ -447,12 +449,20 @@ def main():
                         playing_beats = all_beats[current_pattern_name]
                         print(f"  -> Switched to pattern {current_pattern_name=}")
 
+                        fill_downbeat = playing_beats[0]
+                        print(f"  Saving fill downbeat {fill_downbeat=}")
+
 
                 # Play the current tick
                 #
-                hit_list = playing_beats[tick_number]
+                if tick_number == 0 and fill_downbeat is not None:
+                    hit_list = fill_downbeat
+                    fill_downbeat = None
+                    print(f"  Playing fill downbeat {hit_list=}")
+                else:
+                    hit_list = playing_beats[tick_number]
+                
                 # print(f"  Hit list: {hit_list}")
-
                 if len(hit_list) > 0:
                     # print(f" {current_pattern_name} tick #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
 
