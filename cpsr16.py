@@ -345,11 +345,15 @@ def main():
     current_pattern_name = "main_a"
     playing_beats = all_beats[current_pattern_name]
 
-    import Display_text
-    display = Display_text.Display_text()
-    display.show_pattern_name(current_pattern_name)
-    display.show_beat_number(0)
-    display.render()
+    # import Display_text
+    # display = Display_text.Display_text()
+    # display.show_pattern_name(current_pattern_name)
+    # display.show_beat_number(0)
+    # display.render()
+
+    import Display_TFT
+    tft = Display_TFT.Display_TFT()
+    tft.set_text("Ready")
 
     print("\n**** READY ****")
 
@@ -404,8 +408,9 @@ def main():
                         playing_beats = all_beats[current_pattern_name]
                         print(f"  -> Advanced to pattern {current_pattern_name=}")
         
-                        display.show_pattern_name(current_pattern_name)
-                        display.render()
+                        tft.show_pattern_name(current_pattern_name)
+                        # display.show_pattern_name(current_pattern_name)
+                        # display.render()
 
                     elif is_in_fill:
                         # no advance - go back to main pattern
@@ -417,8 +422,9 @@ def main():
                         playing_beats = all_beats[current_pattern_name]
                         print(f"  -> Reverted to pattern {current_pattern_name=}")
 
-                        display.show_pattern_name(current_pattern_name)
-                        display.render()
+                        tft.show_pattern_name(current_pattern_name)
+                        # display.show_pattern_name(current_pattern_name)
+                        # display.render()
 
                     is_in_fill = False
                     advance_via_fill = False
