@@ -11,28 +11,20 @@ import Display_class
 
 
 class Display_TFT(Display_class.Display_class):
-
-    def __init__(self):
-
+    '''Display object for adafruit 1.44" TFT w/ SD card.'''
+    def __init__(self, spi_bus):
 
         Display_class.Display_class()
-
-        tft_cs = board.GP5
-        tft_dc = board.GP0
-        tft_reset = board.GP1
-
-        spi_clock = board.GP2
-        spi_mosi = board.GP3
-        spi_miso = board.GP4
-        
 
         # Release any resources currently in use for the displays
         displayio.release_displays()
 
-        # not on Pico
-        # spi = board.SPI()
-        spi = busio.SPI(clock=spi_clock, MOSI=spi_mosi, MISO=board.GP4)
-        display_bus = FourWire(spi, command=tft_dc, chip_select=tft_cs, reset=tft_reset)
+        # TODO: pass these in
+        tft_cs = board.GP5
+        tft_dc = board.GP0
+        tft_reset = board.GP1
+
+        display_bus = FourWire(spi_bus, command=tft_dc, chip_select=tft_cs, reset=tft_reset)
         display = ST7735R(display_bus, width=128, height=128, colstart=2, rowstart=1, rotation=92700)
 
         # Make the display context
@@ -88,4 +80,4 @@ class Display_TFT(Display_class.Display_class):
         self._text_area_2.text = name
     
     def show_beat_number(self, number):
-        self._text_area_3.text = number
+        self._text_area_3.text = str(number)

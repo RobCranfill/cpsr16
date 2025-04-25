@@ -7,6 +7,7 @@
 # stdlibs
 import gc
 import json
+import os
 import random
 import sys
 import time
@@ -17,9 +18,16 @@ import audiocore
 import audiomixer
 import board
 import busio
-
+import displayio
 import keypad
 from digitalio import DigitalInOut, Pull
+
+import sdcardio
+import storage
+
+
+# Our code
+import Display_TFT
 
 
 # TODO: make this variable
@@ -38,7 +46,7 @@ NOT_PLAYING_DELAY = 0.01
 
 # TODO: put pin assignments in a hardware config file
 
-# for I2S audio with external I2S DAC board
+# for I2S audio with external I2S DAC board:
 
 # for my RP2350 testbed:
 # AUDIO_OUT_I2S_BIT  = board.D9
@@ -50,6 +58,14 @@ AUDIO_OUT_I2S_BIT  = board.GP8
 AUDIO_OUT_I2S_DATA = board.GP10
 AUDIO_OUT_I2S_WORD = board.GP9
 
+# SPI bus has TFT display and SD card reader:
+SPI_CLOCK = board.GP2
+SPI_MOSI = board.GP3
+SPI_MISO = board.GP4
+
+SD_CARD_CS = board.GP6
+
+# The footswitch inputs:
 SWITCH_1 = board.GP28
 SWITCH_2 = board.GP27
 
@@ -94,6 +110,58 @@ def init_footswitch():
     return keys
 
 
+def init_spi():
+    """Return the SPI object"""
+
+    # Pico doesn't have board.SPI():
+    # spi = board.SPI()
+
+    spi = busio.SPI(clock=SPI_CLOCK, MOSI=SPI_MOSI, MISO=SPI_MISO)
+    return spi
+
+
+# for fun
+def print_directory(path, tabs=0):
+    for file in os.listdir(path):
+        if file == "?":
+            continue  # Issue noted in Learn
+        stats = os.stat(path + "/" + file)
+        filesize = stats[6]
+        isdir = stats[0] & 0x4000
+
+        if filesize < 1000:
+            sizestr = str(filesize) + " by"
+        elif filesize < 1000000:
+            sizestr = "%0.1f KB" % (filesize / 1000)
+        else:
+            sizestr = "%0.1f MB" % (filesize / 1000000)
+
+        prettyprintname = ""
+        for _ in range(tabs):
+            prettyprintname += "   "
+        prettyprintname += file
+        if isdir:
+            prettyprintname += "/"
+        print('{0:<40} Size: {1:>10}'.format(prettyprintname, sizestr))
+
+        # recursively print directory contents
+        if isdir:
+            print_directory(path + "/" + file, tabs + 1)
+
+
+def init_storage(spi_bus):
+    '''Init the SD card interface and mount it.'''
+
+    sdcard = sdcardio.SDCard(spi_bus, SD_CARD_CS)
+    vfs = storage.VfsFat(sdcard)
+
+    storage.mount(vfs, "/sd")
+
+    # for fun
+    print_directory("/sd")
+
+
+
 def load_setup(setups, setup_name):
     """Find and return the indicated setup, or None."""
     setup = None
@@ -108,6 +176,7 @@ def load_pads(setup, setup_name):
     """
     Load the wave files for the pads and assign mixer channels.
     Return dict of {pad_name: (chan,wav), ...}.
+    This will assume files are at "/sd"... in the filesystem.
     """
     pads = setup["pads"]
 
@@ -122,7 +191,7 @@ def load_pads(setup, setup_name):
         # print(f"  - loading '{pad_name}' from '{filename}'...")
 
         # TODO: catch exception?
-        wav = audiocore.WaveFile(open(filename,"rb"))
+        wav = audiocore.WaveFile(open("/sd/" + filename, "rb"))
         wavs[pad_name] = (channel, wav)
         channel += 1
 
@@ -261,28 +330,26 @@ def get_free_mem():
     return gc.mem_free()
 
 
-def test_dummy():
-    """I did not realize this! :-/ """
-    for x in range(10):
-        print(f"natural {x=}")
-        x = (x+1) % 7
-        print(f"  mod to {x=}")
-
-
 ###########################################################
 
 def main():
 
-    # ya learn something new every other day!
-    # test_dummy()
-
-    print(f"Free mem at start: {get_free_mem()}")
-    
-    switches = init_footswitch()
-
     # "Wait a little bit so USB can stabilize and not glitch audio"
     # TODO: needed? 
     time.sleep(2)
+
+    print(f"Free mem at start: {get_free_mem()}")
+
+
+    # Init basic hardware
+    displayio.release_displays() # in case it was being held onto
+    spi = init_spi()
+    init_storage(spi)
+    tft = Display_TFT.Display_TFT(spi)
+
+
+    switches = init_footswitch()
+
 
     # TODO: Handle malformed data?
     all_setups = read_json(DATA_FILE_NAME)
@@ -345,15 +412,18 @@ def main():
     current_pattern_name = "main_a"
     playing_beats = all_beats[current_pattern_name]
 
+
+
+
+    
     # import Display_text
     # display = Display_text.Display_text()
     # display.show_pattern_name(current_pattern_name)
     # display.show_beat_number(0)
     # display.render()
 
-    import Display_TFT
-    tft = Display_TFT.Display_TFT()
-    tft.set_text("Ready")
+    tft.show_pattern_name(current_pattern_name)
+    tft.show_beat_number(0)
 
     print("\n**** READY ****")
 

@@ -5,7 +5,7 @@
     "pads":
         {
         "snare":           "wav/snare_1.wav",
-        "kick":            "wav/kick_1.wav",
+        "kick":            "wav/kick_1-short.wav",
         "hi_hat_open":     "wav/dxopenhat.wav",
         "hi_hat_closed":   "wav/dxclosedhat.wav",
         "ride":            "wav/ride.wav",
