@@ -63,6 +63,11 @@ SPI_CLOCK = board.GP2
 SPI_MOSI = board.GP3
 SPI_MISO = board.GP4
 
+
+TFT_CS = board.GP5
+TFT_DC = board.GP0
+TFT_RST = board.GP1
+
 SD_CARD_CS = board.GP6
 
 # The footswitch inputs:
@@ -113,6 +118,9 @@ def init_footswitch():
 def init_spi():
     """Return the SPI object"""
 
+    # in case it was being held onto
+    displayio.release_displays() 
+
     # Pico doesn't have board.SPI():
     # spi = board.SPI()
 
@@ -142,7 +150,7 @@ def print_directory(path, tabs=0):
         prettyprintname += file
         if isdir:
             prettyprintname += "/"
-        print('{0:<40} Size: {1:>10}'.format(prettyprintname, sizestr))
+        print('{0:<40} {1:>10}'.format(prettyprintname, sizestr))
 
         # recursively print directory contents
         if isdir:
@@ -342,10 +350,10 @@ def main():
 
 
     # Init basic hardware
-    displayio.release_displays() # in case it was being held onto
+
     spi = init_spi()
     init_storage(spi)
-    tft = Display_TFT.Display_TFT(spi)
+    tft = Display_TFT.Display_TFT(spi, TFT_CS, TFT_DC, TFT_RST)
 
 
     switches = init_footswitch()

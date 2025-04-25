@@ -12,17 +12,17 @@ import Display_class
 
 class Display_TFT(Display_class.Display_class):
     '''Display object for adafruit 1.44" TFT w/ SD card.'''
-    def __init__(self, spi_bus):
+    def __init__(self, spi_bus, tft_cs, tft_dc, tft_reset):
 
         Display_class.Display_class()
 
         # Release any resources currently in use for the displays
         displayio.release_displays()
 
-        # TODO: pass these in
-        tft_cs = board.GP5
-        tft_dc = board.GP0
-        tft_reset = board.GP1
+        # # TODO: pass these in
+        # tft_cs = board.GP5
+        # tft_dc = board.GP0
+        # tft_reset = board.GP1
 
         display_bus = FourWire(spi_bus, command=tft_dc, chip_select=tft_cs, reset=tft_reset)
         display = ST7735R(display_bus, width=128, height=128, colstart=2, rowstart=1, rotation=92700)
