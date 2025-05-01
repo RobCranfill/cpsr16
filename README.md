@@ -16,6 +16,9 @@ Inspired by the ancient and venerable Alesis SR-16 (hence the name, CircuitPytho
        * The "following downbeat" is a nice feature of the SR-16; see "Notes from SR-16 manual" below.
      * Normally after playing FILL X, DM will revert back to MAIN X.
      * If a fill is playing and the CF button is pressed again, after playing FILL X it will transition to MAIN Y.
+  * Display
+    * This is problematic. The Pico doesn't work well with SPI displays - not with what I'm asking of it.
+    * A small I2C OLED display seems to work OK. Adafruit product 4440.
 
 
 ## TO DO
