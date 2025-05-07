@@ -1,4 +1,5 @@
-"""Display using Adafruit 128x32 I2C OLED"""
+"""Display using Adafruit 128x32 I2C OLED
+   Display area is 3 rows of 20 characters!"""
 
 import board
 import busio
@@ -32,7 +33,6 @@ class Display_OLED:
         splash = displayio.Group()
         display.root_group = splash
 
-
         # black background
         color_bitmap = displayio.Bitmap(WIDTH, HEIGHT, 1)
         color_palette = displayio.Palette(1)
@@ -41,46 +41,40 @@ class Display_OLED:
         splash.append(bg_sprite)
         
 
-        # # Draw a smaller inner rectangle
-        # inner_bitmap = displayio.Bitmap(WIDTH - BORDER * 2, HEIGHT - BORDER * 2, 1)
-        # inner_palette = displayio.Palette(1)
-        # inner_palette[0] = BLACK
-        # inner_sprite = displayio.TileGrid(inner_bitmap, pixel_shader=inner_palette, x=BORDER, y=BORDER)
-        # splash.append(inner_sprite)
-
-
-        # Display is 3 x 20 chars!
-    
         y_height = 11
 
         y = 4
-        text_area = label.Label(terminalio.FONT, text="Ready", color=WHITE, x=2, y=y)
+        text_area = label.Label(terminalio.FONT, text="DM Ready!", color=WHITE, x=2, y=y)
         splash.append(text_area)
         self._text_area_1 = text_area
 
         y += y_height
-        text_area = label.Label(terminalio.FONT, text="1234567890123456789!", color=WHITE, x=2, y=y)
+        text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=2, y=y)
         splash.append(text_area)
         self._text_area_2 = text_area
 
         y += y_height
-        text_area = label.Label(terminalio.FONT, text="Decenders Yay or Nay", color=WHITE, x=2, y=y)
+        text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=2, y=y)
         splash.append(text_area)
         self._text_area_3 = text_area
 
-        print(".__init__() OK!")
+        # print(".__init__() OK!")
 
 
-    def show_pattern_name(self, patt):
-        self.set_text_1(patt)
+    def show_pattern_name(self, name):
+        self.__set_text_1(f"Patt: {name}")
+    
+    def show_beat_number(self, n):
+        self.__set_text_2(f"Beat: {n}")
 
-    def set_text_1(self, text):
+
+    def __set_text_1(self, text):
         self._text_area_1.text = text
 
-    def set_text_2(self, text):
+    def __set_text_2(self, text):
         self._text_area_2.text = text
 
-    def set_text_3(self, text):
+    def __set_text_3(self, text):
         self._text_area_3.text = text
 
 
