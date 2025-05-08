@@ -1,5 +1,5 @@
-"""Display using Adafruit 128x32 I2C OLED
-   Display area is 3 rows of 20 characters!"""
+"""Display using Adafruit 128x32 I2C OLED.
+   Display area is 3 rows of 20 characters."""
 
 import board
 import busio
@@ -8,9 +8,10 @@ import time
 import displayio
 import i2cdisplaybus
 import adafruit_displayio_ssd1306
+from adafruit_display_text import label
 import terminalio
 
-from adafruit_display_text import label
+
 
 WIDTH  = 128
 HEIGHT =  32 
@@ -60,7 +61,7 @@ class Display_OLED:
 
         # print(".__init__() OK!")
 
-
+    # not sure these next two are really useful.
     def show_pattern_name(self, name):
         self.__set_text_1(f"Patt: {name}")
     

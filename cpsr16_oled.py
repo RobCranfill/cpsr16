@@ -45,13 +45,13 @@ AUDIO_BUFFER_KBYTES = 1 # per voice
 
 # for my RP2350 testbed:
 # AUDIO_OUT_I2S_BIT  = board.D9
-# AUDIO_OUT_I2S_DATA = board.D11
 # AUDIO_OUT_I2S_WORD = board.D10
+# AUDIO_OUT_I2S_DATA = board.D11
 
 # for RP Pico
 AUDIO_OUT_I2S_BIT  = board.GP8
-AUDIO_OUT_I2S_DATA = board.GP10
 AUDIO_OUT_I2S_WORD = board.GP9
+AUDIO_OUT_I2S_DATA = board.GP10
 
 SWITCH_1 = board.GP28
 SWITCH_2 = board.GP27
@@ -60,7 +60,8 @@ BUTTON_A = board.GP16
 BUTTON_B = board.GP17
 BUTTON_C = board.GP18
 
-# for performance improvement; otherwise get audio glitches when auto-reloads.
+
+# for performance improvement; otherwise we get audio glitches when auto-reloads.
 import supervisor
 supervisor.runtime.autoreload = False
 print(f"**** {supervisor.runtime.autoreload=}\n")
@@ -96,13 +97,16 @@ def init_audio(n_voices):
     return au, mx
 
 
-def init_footswitch():
-    """Using 'keypad' util."""
-    return keypad.Keys((SWITCH_1,SWITCH_2), value_when_pressed=False, pull=True)
+# def init_footswitch():
+#     """Using 'keypad' util."""
+#     return keypad.Keys((SWITCH_1, SWITCH_2), value_when_pressed=False, pull=True)
 
+# def init_buttons():
+#     return keypad.Keys((BUTTON_A, BUTTON_B, BUTTON_C), value_when_pressed=False, pull=True)
 
-def init_buttons():
-    return keypad.Keys((BUTTON_A, BUTTON_B, BUTTON_C), value_when_pressed=False, pull=True)
+def init_all_switches():
+    """return (footswitch 1, footswitch 2, button 1, button 2, button 3)"""
+    return keypad.Keys((SWITCH_1, SWITCH_2, BUTTON_A, BUTTON_B, BUTTON_C), value_when_pressed=False, pull=True)
 
 
 def load_setup(setups, setup_name):
@@ -250,41 +254,72 @@ def load_beats_for_patterns(setup, wav_dict):
     return all_beats
 
 
-def handle_footswitch_events(switch_list):
-    """Return (stop_button, fill_button) states"""
+# def handle_footswitch_events(switch_list):
+#     """Return (stop_button, fill_button) states"""
 
-    # event will be None if nothing has happened.
-    event = switch_list.events.get()
+#     # event will be None if nothing has happened.
+#     event = switch_list.events.get()
 
-    stop_button = False
-    fill_button = False
-    if event:
-        # print(f" ***** footswitch {event}")
-        if event.pressed and event.key_number == 0:
-            stop_button = True
-        if event.pressed and event.key_number == 1:
-            fill_button = True
-    return (stop_button, fill_button)
+#     stop_button = False
+#     fill_button = False
+#     if event:
+#         # print(f" ***** footswitch {event}")
+#         if event.pressed and event.key_number == 0:
+#             stop_button = True
+#         if event.pressed and event.key_number == 1:
+#             fill_button = True
+#     return (stop_button, fill_button)
 
 
-def handle_button_events(button_list):
-    """Return (a, b, c) states"""
+# def handle_button_events(button_list):
+#     """Return (a, b, c) states"""
+
+#     # event will be None if nothing has happened.
+#     event = button_list.events.get()
+    
+#     button_a = False
+#     button_b = False
+#     button_c = False
+#     if event:
+#         print(f" ***** button {event}")
+#         if event.pressed and event.key_number == 0:
+#             button_a = True
+#         if event.pressed and event.key_number == 1:
+#             button_b = True
+#         if event.pressed and event.key_number == 2:
+#             button_c = True
+#     return (button_a, button_b, button_c)
+
+
+def handle_all_events(button_list):
+    """Return (f1, f2, a1, a2, a3) states"""
+
+    f1 = False
+    f2 = False
+    b1 = False
+    b2 = False
+    b3 = False
 
     # event will be None if nothing has happened.
     event = button_list.events.get()
-    print(f"{event=}")
-    button_a = False
-    button_b = False
-    button_c = False
+    
     if event:
-        print(f" ***** button {event}")
+        # print(f" ***** button {event}")
+
         if event.pressed and event.key_number == 0:
-            button_a = True
+            f1 = True
         if event.pressed and event.key_number == 1:
-            button_b = True
+            f2 = True
+
         if event.pressed and event.key_number == 2:
-            button_c = True
-    return (button_a, button_b, button_c)
+            b1 = True
+        if event.pressed and event.key_number == 3:
+            b2 = True
+        if event.pressed and event.key_number == 4:
+            b3 = True
+
+    return (f1, f2, b1, b2, b3)
+
 
 
 def get_free_mem():
@@ -310,8 +345,9 @@ def main():
     # TODO: needed? 
     time.sleep(2)
 
-    switches = init_footswitch()
-    buttons = init_buttons()
+    switches = init_all_switches()
+    # switches = init_footswitch()
+    # buttons = init_buttons()
 
     # TODO: Handle malformed data?
     all_setups = read_json(DATA_FILE_NAME)
@@ -354,7 +390,7 @@ def main():
     all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
 
 
-    # 1/4 = 60 BPM
+    # 1/4 = 60 BPM - I don't get this! :-/
     TICK_SLEEP_TIME = 1/4
     bpm = int(15/TICK_SLEEP_TIME)
     print(f" ** {bpm} BPM")
@@ -376,9 +412,7 @@ def main():
     current_pattern_name = "main_a"
     playing_beats = all_beats[current_pattern_name]
 
-
     display = Display_OLED.Display_OLED()
-
     display.show_pattern_name(current_pattern_name)
 
     print("\n**** READY ****")
@@ -389,7 +423,9 @@ def main():
         #
         if not is_playing:
 
-            stop_button, fill_button = handle_footswitch_events(switches)
+            stop_button, fill_button, b1, b2, b3 = handle_all_events(switches)
+            # stop_button, fill_button = handle_footswitch_events(switches)
+
             if stop_button:
                 is_playing = not is_playing
                 print(f" left -> {is_playing=}, {current_pattern_name=}")
@@ -411,7 +447,8 @@ def main():
                     bpm = int(30/TICK_SLEEP_TIME)
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
-            button_a, button_b, button_c = handle_button_events(switches)
+            if b1 or b2 or b3:
+                print(f"handle button {b1=} {b2=} {b3=}")
 
 
             # Idle handler; if we haven't started playing, wait a tick.
@@ -458,7 +495,7 @@ def main():
                     is_in_fill = False
                     advance_via_fill = False
 
-                stop_button, fill_button = handle_events(switches)
+                stop_button, fill_button, b1, b2, b3 = handle_all_events(switches)
                 if stop_button:
                     is_playing = not is_playing
                     print(f" left -> {is_playing=}, {current_pattern_name=}")
