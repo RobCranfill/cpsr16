@@ -56,7 +56,11 @@ AUDIO_OUT_I2S_WORD = board.GP9
 SWITCH_1 = board.GP28
 SWITCH_2 = board.GP27
 
+BUTTON_A = board.GP16
+BUTTON_B = board.GP17
+BUTTON_C = board.GP18
 
+# for performance improvement; otherwise get audio glitches when auto-reloads.
 import supervisor
 supervisor.runtime.autoreload = False
 print(f"**** {supervisor.runtime.autoreload=}\n")
@@ -94,8 +98,11 @@ def init_audio(n_voices):
 
 def init_footswitch():
     """Using 'keypad' util."""
-    keys = keypad.Keys((SWITCH_1,SWITCH_2), value_when_pressed=False, pull=True)
-    return keys
+    return keypad.Keys((SWITCH_1,SWITCH_2), value_when_pressed=False, pull=True)
+
+
+def init_buttons():
+    return keypad.Keys((BUTTON_A, BUTTON_B, BUTTON_C), value_when_pressed=False, pull=True)
 
 
 def load_setup(setups, setup_name):
@@ -243,7 +250,7 @@ def load_beats_for_patterns(setup, wav_dict):
     return all_beats
 
 
-def handle_events(switch_list):
+def handle_footswitch_events(switch_list):
     """Return (stop_button, fill_button) states"""
 
     # event will be None if nothing has happened.
@@ -252,7 +259,7 @@ def handle_events(switch_list):
     stop_button = False
     fill_button = False
     if event:
-        # print(f" ***** {event}")
+        # print(f" ***** footswitch {event}")
         if event.pressed and event.key_number == 0:
             stop_button = True
         if event.pressed and event.key_number == 1:
@@ -260,15 +267,35 @@ def handle_events(switch_list):
     return (stop_button, fill_button)
 
 
+def handle_button_events(button_list):
+    """Return (a, b, c) states"""
+
+    # event will be None if nothing has happened.
+    event = button_list.events.get()
+    print(f"{event=}")
+    button_a = False
+    button_b = False
+    button_c = False
+    if event:
+        print(f" ***** button {event}")
+        if event.pressed and event.key_number == 0:
+            button_a = True
+        if event.pressed and event.key_number == 1:
+            button_b = True
+        if event.pressed and event.key_number == 2:
+            button_c = True
+    return (button_a, button_b, button_c)
+
+
 def get_free_mem():
     gc.collect()
     return gc.mem_free()
 
 
-def test_dummy():
-    """I did not realize this! :-/ """
+def test_iterators():
+    """You can't change an iterator on the fly! I did not realize this! :-/ """
     for x in range(10):
-        print(f"natural {x=}")
+        print(f"actual {x=}")
         x = (x+1) % 7
         print(f"  mod to {x=}")
 
@@ -277,16 +304,14 @@ def test_dummy():
 
 def main():
 
-    # ya learn something new every other day!
-    # test_dummy()
-
     print(f"Free mem at start: {get_free_mem()}")
     
-    switches = init_footswitch()
-
     # "Wait a little bit so USB can stabilize and not glitch audio"
     # TODO: needed? 
     time.sleep(2)
+
+    switches = init_footswitch()
+    buttons = init_buttons()
 
     # TODO: Handle malformed data?
     all_setups = read_json(DATA_FILE_NAME)
@@ -364,7 +389,7 @@ def main():
         #
         if not is_playing:
 
-            stop_button, fill_button = handle_events(switches)
+            stop_button, fill_button = handle_footswitch_events(switches)
             if stop_button:
                 is_playing = not is_playing
                 print(f" left -> {is_playing=}, {current_pattern_name=}")
@@ -386,7 +411,11 @@ def main():
                     bpm = int(30/TICK_SLEEP_TIME)
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
-            # Idle handler
+            button_a, button_b, button_c = handle_button_events(switches)
+
+
+            # Idle handler; if we haven't started playing, wait a tick.
+            # TODO: could be smarter; check current time and delay the right amount from last time.
             if not is_playing:
                 # print("  (idle)")
                 time.sleep(NOT_PLAYING_DELAY)
