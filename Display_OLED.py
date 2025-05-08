@@ -61,12 +61,15 @@ class Display_OLED:
 
         # print(".__init__() OK!")
 
-    # not sure these next two are really useful.
+    def show_setup_name(self, name):
+        self.__set_text_1(f"Setup: {name}")
+
     def show_pattern_name(self, name):
-        self.__set_text_1(f"Patt: {name}")
+        self.__set_text_2(f"Patt: {name}")
     
+    # too much actvitiy for display?
     def show_beat_number(self, n):
-        self.__set_text_2(f"Beat: {n}")
+        self.__set_text_3(f"Beat: {n}")
 
 
     def __set_text_1(self, text):

@@ -17,10 +17,9 @@ import audiocore
 import audiomixer
 import board
 import busio
-
 import keypad
-from digitalio import DigitalInOut, Pull
 
+# our libs
 import Display_OLED
 
 
@@ -32,7 +31,7 @@ TICKS_PER_MEASURE = 16
 BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
 # The data file we read.
-DATA_FILE_NAME = "rhythms.dict"
+DATA_FILE_NAME = "rhythms-3b.dict"
 
 # idle loop hander delay
 NOT_PLAYING_DELAY = 0.01
@@ -70,6 +69,7 @@ print(f"**** {supervisor.runtime.autoreload=}\n")
 def read_json(filename):
     """Returns the de-JSON-ed data."""
 
+    print(f"* Reading config {filename}...")
     with open(filename) as f:
         data = f.read()
     # print(f">>> read_json: {data}")
@@ -335,6 +335,26 @@ def test_iterators():
         print(f"  mod to {x=}")
 
 
+
+def load_setup_pads(setups, name):
+
+    this_setup = load_setup(setups, name)
+    if this_setup is None: # shouldn't happen
+        print(f"\n!!! Can't find setup {setup_name}")
+        sys.exit()
+
+    # Load the wavs for the pads
+    wavs_for_channels = load_pads(this_setup, name)
+    wav_table = [None] * len(wavs_for_channels)
+    for k, v in wavs_for_channels.items():
+        chan = v[0]
+        wav = v[1]
+        wav_table[chan] = wav
+    # print(f" * built wave table: {wav_table}")
+
+    return this_setup, wavs_for_channels, wav_table
+
+
 ###########################################################
 
 def main():
@@ -364,25 +384,28 @@ def main():
 ########## in part (mainly?) because we only want to load one set of WAV files.
 
     # TODO: select via UI
-    setup_name = setup_name_list[0] # first setup, for testing
-    this_setup = load_setup(all_setups, setup_name)
-    if this_setup is None: # shouldn't happen with GUI
-        print(f"\n!!! Can't find setup {setup_name}")
-        sys.exit()
+    setup_index = 0
+    setup_name = setup_name_list[setup_index] # first setup, for testing
 
-    # Load the wavs for the pads
-    wavs_for_channels = load_pads(this_setup, setup_name)
-    wav_table = [None] * len(wavs_for_channels)
-    for k, v in wavs_for_channels.items():
-        chan = v[0]
-        wav = v[1]
-        wav_table[chan] = wav
-    # print(f" * built wave table: {wav_table}")
+
+    # this_setup = load_setup(all_setups, setup_name)
+    # if this_setup is None: # shouldn't happen
+    #     print(f"\n!!! Can't find setup {setup_name}")
+    #     sys.exit()
+
+    # # Load the wavs for the pads
+    # wavs_for_channels = load_pads(this_setup, setup_name)
+    # wav_table = [None] * len(wavs_for_channels)
+    # for k, v in wavs_for_channels.items():
+    #     chan = v[0]
+    #     wav = v[1]
+    #     wav_table[chan] = wav
+    # # print(f" * built wave table: {wav_table}")
+
+    this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
 
     # Allocate a mixer with just enough channels.
     # We only get the audio object so it won't get GCed. :-/
-    m1 = get_free_mem()
-
     audio, mixer = init_audio(len(wavs_for_channels))
 
     # Load the beats for all patterns for this setup.
@@ -413,6 +436,7 @@ def main():
     playing_beats = all_beats[current_pattern_name]
 
     display = Display_OLED.Display_OLED()
+    display.show_setup_name(setup_name)
     display.show_pattern_name(current_pattern_name)
 
     print("\n**** READY ****")
@@ -448,7 +472,22 @@ def main():
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
             if b1 or b2 or b3:
-                print(f"handle button {b1=} {b2=} {b3=}")
+                # print(f"handle button {b1=} {b2=} {b3=}")
+                if b1:
+                    setup_index = (setup_index+1) % len(setup_name_list)
+                    setup_name = setup_name_list[setup_index] # first setup, for testing
+                    print(f"go to next setup: {setup_name}")
+                elif b2:
+                    setup_index = (setup_index-1) % len(setup_name_list)
+                    setup_name = setup_name_list[setup_index] # first setup, for testing
+                    print(f"go to prev setup: {setup_name}")
+                
+                # todo: refactor with above similar calls
+                this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
+                # audio, mixer = init_audio(len(wavs_for_channels))
+                all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
+                
+                display.show_setup_name(setup_name)
 
 
             # Idle handler; if we haven't started playing, wait a tick.
@@ -558,7 +597,7 @@ def main():
                             #     mixer.voice[track_index].stop()
 
                             mixer.voice[channel].level = volume/9
-                            wav = wav_table[channel]
+                            wav = wavetable[channel]
                             mixer.voice[channel].play(wav)
 
                 # FIXME: instead of just sleeping for the full time,
