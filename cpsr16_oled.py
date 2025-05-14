@@ -60,12 +60,17 @@ BUTTON_B = board.GP17
 BUTTON_C = board.GP18
 
 
-AUDIO_BUFFER_KBYTES = 1 # per voice
+# Mixer buffer size, per voice.
+# This seems really small but sounds fine and keeps the timing snappy!
+AUDIO_BUFFER_BYTES = 64 
 
 SAMPLE_RATE=22050
 CHANNEL_COUNT=1
 BITS_PER_SAMPLE=16
 SAMPLES_SIGNED=True
+
+# I thought this was useful, but setting the Mixer buffer size low seems to work fine!
+USE_FANCY_TIMING = False
 
 
 # for performance improvement; otherwise we get audio glitches when auto-reloads.
@@ -104,7 +109,7 @@ def init_mixer(audio_out, n_voices: int):
     mixer = audiomixer.Mixer(voice_count=n_voices,
                             sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
                             bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
-                            buffer_size=AUDIO_BUFFER_KBYTES * 1024 * n_voices) # adjust buffer per voice?
+                            buffer_size=AUDIO_BUFFER_BYTES * n_voices) # adjust buffer per voice?
 
     audio_out.play(mixer) # attach mixer to audio playback
     return mixer
@@ -373,10 +378,11 @@ def main():
     this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
 
-    # 1/4 = 60 BPM - I don't get this! :-/
+    # FIXME: 1/4 = 60 BPM - I don't get this! :-/
     TICK_SLEEP_TIME = 1/4
+    TICK_SLEEP_TIME_MS = TICK_SLEEP_TIME * 1_000
     bpm = int(15/TICK_SLEEP_TIME)
-    print(f" ** {bpm} BPM")
+    print(f" ** {TICK_SLEEP_TIME=} -> {TICK_SLEEP_TIME_MS=} -> {bpm} BPM")
 
     last_tempo_tap = 0
 
@@ -469,6 +475,8 @@ def main():
         while is_playing:
 
             for tick_number in range(TICKS_PER_MEASURE):
+
+                tick_start_time_ms = supervisor.ticks_ms()
 
                 # Special stuff on the downbeat, the start of a measure.
                 #
@@ -573,7 +581,15 @@ def main():
                 # FIXME: instead of just sleeping for the full time,
                 # incorporate this into a loop, above, around the button-check stuff.
                 #
-                time.sleep(TICK_SLEEP_TIME)
+
+                if USE_FANCY_TIMING:
+                    tick_delta_ms = supervisor.ticks_ms() - tick_start_time_ms
+                    sleep_ms = TICK_SLEEP_TIME_MS - tick_delta_ms
+                    # print(f" {tick_start_time_ms=} {tick_delta_ms=} {sleep_ms=}")
+                    if sleep_ms > 0:
+                        time.sleep(sleep_ms / 1_000)
+                else:
+                    time.sleep(TICK_SLEEP_TIME)
 
             # end of tick loop
 
