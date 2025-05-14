@@ -60,17 +60,20 @@ BUTTON_B = board.GP17
 BUTTON_C = board.GP18
 
 
+
 # Mixer buffer size, per voice.
-# This seems really small but sounds fine and keeps the timing snappy!
-AUDIO_BUFFER_BYTES = 64 
+# What is the best value? Esp w/r/t "fancy timing"?
+AUDIO_BUFFER_BYTES = 256 
+
+# I thought this was useful, but setting the Mixer buffer size low seems to work fine!
+USE_FANCY_TIMING = False
+
 
 SAMPLE_RATE=22050
 CHANNEL_COUNT=1
 BITS_PER_SAMPLE=16
 SAMPLES_SIGNED=True
 
-# I thought this was useful, but setting the Mixer buffer size low seems to work fine!
-USE_FANCY_TIMING = False
 
 
 # for performance improvement; otherwise we get audio glitches when auto-reloads.
@@ -332,9 +335,15 @@ def load_beats_and_mixer(audio_out, all_setups, setup_name):
     return this_setup, wavs_for_channels, wavetable, all_beats, mixer
 
 
+def calculate_bpm(sleep_time_seconds):
+
+    # FIXME: 1/4 = 60 BPM - I don't get this! :-/
+
+    return int(15/sleep_time_seconds)
+
+
 
 ###########################################################
-
 def main():
 
     print(f"Free mem at start: {get_free_mem()}")
@@ -355,7 +364,6 @@ def main():
     # for future use in UI?
     setup_name_list = get_setup_names(all_setups)
 
-
 ########## from here we are working with one 'setup' at a time.
 ########## in part (mainly?) because we only want to load one set of WAV files.
 
@@ -363,8 +371,8 @@ def main():
     setup_index = 0
     setup_name = setup_name_list[setup_index] # first setup, for testing
 
-
     audio_out = init_audio()
+
 
 
     # this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
@@ -381,10 +389,12 @@ def main():
     # FIXME: 1/4 = 60 BPM - I don't get this! :-/
     TICK_SLEEP_TIME = 1/4
     TICK_SLEEP_TIME_MS = TICK_SLEEP_TIME * 1_000
-    bpm = int(15/TICK_SLEEP_TIME)
-    print(f" ** {TICK_SLEEP_TIME=} -> {TICK_SLEEP_TIME_MS=} -> {bpm} BPM")
+    bpm = calculate_bpm(TICK_SLEEP_TIME)
 
-    last_tempo_tap = 0
+    if USE_FANCY_TIMING:
+        print(f" ** {USE_FANCY_TIMING=}: {TICK_SLEEP_TIME=} -> {TICK_SLEEP_TIME_MS=} -> {bpm} BPM")
+    else:
+        print(f" ** {USE_FANCY_TIMING=}: {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
 
 # left button is start/stop.
@@ -397,6 +407,8 @@ def main():
     is_in_fill = False
     advance_via_fill = False
     fill_downbeat = None
+
+    last_tempo_tap = 0
 
     current_pattern_name = "main_a"
     playing_beats = all_beats[current_pattern_name]
@@ -419,7 +431,7 @@ def main():
             if stop_button:
                 print("* STARTING")
                 is_playing = True
-                print(f" left -> {is_playing=}, {current_pattern_name=}")
+                # print(f" left -> {is_playing=}, {current_pattern_name=}")
 
             if fill_button:
                 if last_tempo_tap == 0:
@@ -490,8 +502,8 @@ def main():
                         else:
                             current_pattern_name = "main_a"
                         playing_beats = all_beats[current_pattern_name]
-                        print(f"  -> Advanced to pattern {current_pattern_name=}")
-        
+
+                        # print(f"  -> Advanced to pattern {current_pattern_name=}")
                         display.show_pattern_name(current_pattern_name)
                         # display.render()
 
@@ -503,7 +515,7 @@ def main():
                             current_pattern_name = "main_b"
 
                         playing_beats = all_beats[current_pattern_name]
-                        print(f"  -> Reverted to pattern {current_pattern_name=}")
+                        # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
                         display.show_pattern_name(current_pattern_name)
                         # display.render()
@@ -514,20 +526,17 @@ def main():
                 stop_button, fill_button, b1, b2, b3 = handle_all_events(switches)
                 if stop_button:
                     is_playing = not is_playing
-                    print(f" left -> {is_playing=}, {current_pattern_name=}")
+                    # print(f" left -> {is_playing=}, {current_pattern_name=}")
                     if not is_playing:
                         print("* STOPPING")
-
-                        # right?
                         current_pattern_name = "main_a"
                         playing_beats = all_beats[current_pattern_name]
-
                         break
 
                 if fill_button:
                     if is_in_fill:
                         advance_via_fill = True
-                        print(f"  ->  Will advance to next pattern...")
+                        # print(f"  ->  Will advance to next pattern...")
                     else:
                         is_in_fill = True
                         if current_pattern_name == "main_a":
@@ -535,25 +544,24 @@ def main():
                         else:
                             current_pattern_name = "fill_b"
                         playing_beats = all_beats[current_pattern_name]
-                        print(f"  -> Switched to pattern {current_pattern_name=}")
-
                         fill_downbeat = playing_beats[0]
-                        print(f"  Saving fill downbeat {fill_downbeat=}")
+                        # print(f"  -> Switched to pattern {current_pattern_name=}")
+                        # print(f"     Saving fill downbeat {fill_downbeat=}")
 
 
                 # Play the current tick
                 #
                 if tick_number == 0 and fill_downbeat is not None:
                     hit_list = fill_downbeat
+                    # print(f"  Playing fill downbeat {hit_list=}")
                     fill_downbeat = None
-                    print(f"  Playing fill downbeat {hit_list=}")
                 else:
                     hit_list = playing_beats[tick_number]
                 
                 # print(f"  Hit list: {hit_list}")
                 if len(hit_list) > 0:
 
-                    # FIXME: nope
+                    # TODO: I don't know that we can update the display this often without a performace hit.
                     # display.show_beat_number(tick_number)
 
                     # print(f" {current_pattern_name} tick #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
@@ -568,24 +576,24 @@ def main():
 
                             # we don't seem to need to stop old voices - just re-start them!
                             #
-                            if mixer.voice[channel].playing:
-                                # print("stopping voice")
-                                # FIXME: which? are these the same thing?
-                                mixer.stop_voice(channel)
-                                # mixer.voice[channel].stop()
+                            # if mixer.voice[channel].playing:
+                            #     # print("stopping voice")
+                            #     # FIXME: which? are these the same thing?
+                            #     mixer.stop_voice(channel)
+                            #     # mixer.voice[channel].stop()
 
                             mixer.voice[channel].level = volume/9
                             wav = wavetable[channel]
                             mixer.voice[channel].play(wav, loop=False)
 
-                # FIXME: instead of just sleeping for the full time,
-                # incorporate this into a loop, above, around the button-check stuff.
-                #
+                # This doesn't seem necessary if we make the Mixer buffers small,
+                # which seems to work fine. This may change in the future, depending
+                # on our display, other peripherals, etcc.
 
                 if USE_FANCY_TIMING:
                     tick_delta_ms = supervisor.ticks_ms() - tick_start_time_ms
                     sleep_ms = TICK_SLEEP_TIME_MS - tick_delta_ms
-                    # print(f" {tick_start_time_ms=} {tick_delta_ms=} {sleep_ms=}")
+                    print(f" {tick_start_time_ms=} {tick_delta_ms=} {sleep_ms=}")
                     if sleep_ms > 0:
                         time.sleep(sleep_ms / 1_000)
                 else:
