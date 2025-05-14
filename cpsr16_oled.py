@@ -31,14 +31,14 @@ TICKS_PER_MEASURE = 16
 BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
 # The data file we read.
-DATA_FILE_NAME = "rhythms-3b.dict"
+DATA_FILE_NAME = "rhythms-4-sr16.dict"
 
 # idle loop hander delay
 NOT_PLAYING_DELAY = 0.01
 
-AUDIO_BUFFER_KBYTES = 1 # per voice
 
-# TODO: put pin assignments in a hardware config file
+# TODO: put pin assignments in a hardware config file?
+# TODO: along with other things like sample rates?
 
 # for I2S audio with external I2S DAC board
 
@@ -60,6 +60,14 @@ BUTTON_B = board.GP17
 BUTTON_C = board.GP18
 
 
+AUDIO_BUFFER_KBYTES = 1 # per voice
+
+SAMPLE_RATE=22050
+CHANNEL_COUNT=1
+BITS_PER_SAMPLE=16
+SAMPLES_SIGNED=True
+
+
 # for performance improvement; otherwise we get audio glitches when auto-reloads.
 import supervisor
 supervisor.runtime.autoreload = False
@@ -79,30 +87,27 @@ def read_json(filename):
     return result
 
 
-def init_audio(n_voices):
+def init_audio():
     """Return (audio, mixer); audio object only so it doesn't get GCed."""
 
-    au = audiobusio.I2SOut(
+    # TODO: catch error?
+    audio_device = audiobusio.I2SOut(
         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
+    
+    return audio_device
+
+
+
+def init_mixer(audio_out, n_voices: int):
 
     # print(f"Creating mixer with {n_voices} voices....")
-    mx = audiomixer.Mixer(voice_count=n_voices,
-                            sample_rate=22050, channel_count=2,
-                            bits_per_sample=16, samples_signed=True,
+    mixer = audiomixer.Mixer(voice_count=n_voices,
+                            sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
+                            bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
                             buffer_size=AUDIO_BUFFER_KBYTES * 1024 * n_voices) # adjust buffer per voice?
 
-    au.play(mx) # attach mixer to audio playback
-
-    # We must also return the "audio" object so it doesn't get garbage collected!
-    return au, mx
-
-
-# def init_footswitch():
-#     """Using 'keypad' util."""
-#     return keypad.Keys((SWITCH_1, SWITCH_2), value_when_pressed=False, pull=True)
-
-# def init_buttons():
-#     return keypad.Keys((BUTTON_A, BUTTON_B, BUTTON_C), value_when_pressed=False, pull=True)
+    audio_out.play(mixer) # attach mixer to audio playback
+    return mixer
 
 def init_all_switches():
     """return (footswitch 1, footswitch 2, button 1, button 2, button 3)"""
@@ -145,7 +150,7 @@ def load_pads(setup, setup_name):
     # print(f"  * {wavs=}")
 
     m2 = get_free_mem()
-    print(f"load_pads:  Free mem after: {m2} - delta = {m1-m2}")
+    print(f"load_pads:  Free mem after: {m2} - delta = {m1-m2}\n")
 
     return wavs
 
@@ -214,7 +219,7 @@ def load_beats_for_patterns(setup, wav_dict):
           ...
         )
     """
-    # print(f"load_beats_for_patterns...")
+    print(f"load_beats_for_patterns {setup=}")
 
     all_beats = {}
     for pattern_name, pattern_dict in setup["patterns"].items():
@@ -250,46 +255,8 @@ def load_beats_for_patterns(setup, wav_dict):
 
         all_beats[pattern_name] = track_hits
 
-    # print(f"  * load_beats_for_patterns returning \n{all_beats}")
+    print(f"  * load_beats_for_patterns returning \n{all_beats}")
     return all_beats
-
-
-# def handle_footswitch_events(switch_list):
-#     """Return (stop_button, fill_button) states"""
-
-#     # event will be None if nothing has happened.
-#     event = switch_list.events.get()
-
-#     stop_button = False
-#     fill_button = False
-#     if event:
-#         # print(f" ***** footswitch {event}")
-#         if event.pressed and event.key_number == 0:
-#             stop_button = True
-#         if event.pressed and event.key_number == 1:
-#             fill_button = True
-#     return (stop_button, fill_button)
-
-
-# def handle_button_events(button_list):
-#     """Return (a, b, c) states"""
-
-#     # event will be None if nothing has happened.
-#     event = button_list.events.get()
-    
-#     button_a = False
-#     button_b = False
-#     button_c = False
-#     if event:
-#         print(f" ***** button {event}")
-#         if event.pressed and event.key_number == 0:
-#             button_a = True
-#         if event.pressed and event.key_number == 1:
-#             button_b = True
-#         if event.pressed and event.key_number == 2:
-#             button_c = True
-#     return (button_a, button_b, button_c)
-
 
 def handle_all_events(button_list):
     """Return (f1, f2, a1, a2, a3) states"""
@@ -321,19 +288,9 @@ def handle_all_events(button_list):
     return (f1, f2, b1, b2, b3)
 
 
-
 def get_free_mem():
     gc.collect()
     return gc.mem_free()
-
-
-def test_iterators():
-    """You can't change an iterator on the fly! I did not realize this! :-/ """
-    for x in range(10):
-        print(f"actual {x=}")
-        x = (x+1) % 7
-        print(f"  mod to {x=}")
-
 
 
 def load_setup_pads(setups, name):
@@ -355,6 +312,22 @@ def load_setup_pads(setups, name):
     return this_setup, wavs_for_channels, wav_table
 
 
+def load_beats_and_mixer(audio_out, all_setups, setup_name):
+    """Return this_setup, wavs_for_channels, wavetable, all_beats, mixer """
+
+
+    this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
+
+    # Load the beats for all patterns for this setup.
+    all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
+
+    # Allocate a mixer with just enough channels.
+    mixer = init_mixer(audio_out, len(wavs_for_channels))
+
+    return this_setup, wavs_for_channels, wavetable, all_beats, mixer
+
+
+
 ###########################################################
 
 def main():
@@ -366,8 +339,6 @@ def main():
     time.sleep(2)
 
     switches = init_all_switches()
-    # switches = init_footswitch()
-    # buttons = init_buttons()
 
     # TODO: Handle malformed data?
     all_setups = read_json(DATA_FILE_NAME)
@@ -388,29 +359,18 @@ def main():
     setup_name = setup_name_list[setup_index] # first setup, for testing
 
 
-    # this_setup = load_setup(all_setups, setup_name)
-    # if this_setup is None: # shouldn't happen
-    #     print(f"\n!!! Can't find setup {setup_name}")
-    #     sys.exit()
+    audio_out = init_audio()
 
-    # # Load the wavs for the pads
-    # wavs_for_channels = load_pads(this_setup, setup_name)
-    # wav_table = [None] * len(wavs_for_channels)
-    # for k, v in wavs_for_channels.items():
-    #     chan = v[0]
-    #     wav = v[1]
-    #     wav_table[chan] = wav
-    # # print(f" * built wave table: {wav_table}")
 
-    this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
+    # this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
 
-    # Allocate a mixer with just enough channels.
-    # We only get the audio object so it won't get GCed. :-/
-    audio, mixer = init_audio(len(wavs_for_channels))
+    # # Load the beats for all patterns for this setup.
+    # all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
 
-    # Load the beats for all patterns for this setup.
-    # FIXME: we could do this inside the DM object but that needs the WAV stuff. :-/
-    all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
+    # # Allocate a mixer with just enough channels.
+    # mixer = init_mixer(audio_out, len(wavs_for_channels))
+
+    this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
 
     # 1/4 = 60 BPM - I don't get this! :-/
@@ -451,7 +411,8 @@ def main():
             # stop_button, fill_button = handle_footswitch_events(switches)
 
             if stop_button:
-                is_playing = not is_playing
+                print("* STARTING")
+                is_playing = True
                 print(f" left -> {is_playing=}, {current_pattern_name=}")
 
             if fill_button:
@@ -482,13 +443,21 @@ def main():
                     setup_name = setup_name_list[setup_index] # first setup, for testing
                     print(f"go to prev setup: {setup_name}")
                 
-                # todo: refactor with above similar calls
-                this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
-                # audio, mixer = init_audio(len(wavs_for_channels))
-                all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
-                
-                display.show_setup_name(setup_name)
 
+                # todo: refactor with above similar calls
+
+                # this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
+
+                # # Load the beats for all patterns for this setup.
+                # all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
+
+                # # Allocate a mixer with just enough channels.
+                # mixer = init_mixer(audio_out, len(wavs_for_channels))
+
+                this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+
+
+                display.show_setup_name(setup_name)
 
             # Idle handler; if we haven't started playing, wait a tick.
             # TODO: could be smarter; check current time and delay the right amount from last time.
@@ -539,7 +508,7 @@ def main():
                     is_playing = not is_playing
                     print(f" left -> {is_playing=}, {current_pattern_name=}")
                     if not is_playing:
-                        print("  STOPPING")
+                        print("* STOPPING")
 
                         # right?
                         current_pattern_name = "main_a"
@@ -591,14 +560,15 @@ def main():
 
                             # we don't seem to need to stop old voices - just re-start them!
                             #
-                            # if mixer.voice[track_index].playing:
-                            #     # print("stopping voice")
-                            #     mixer.stop_voice(track_index)
-                            #     mixer.voice[track_index].stop()
+                            if mixer.voice[channel].playing:
+                                # print("stopping voice")
+                                # FIXME: which? are these the same thing?
+                                mixer.stop_voice(channel)
+                                # mixer.voice[channel].stop()
 
                             mixer.voice[channel].level = volume/9
                             wav = wavetable[channel]
-                            mixer.voice[channel].play(wav)
+                            mixer.voice[channel].play(wav, loop=False)
 
                 # FIXME: instead of just sleeping for the full time,
                 # incorporate this into a loop, above, around the button-check stuff.
