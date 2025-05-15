@@ -1,0 +1,154 @@
+[
+    {
+    "comment": "First try using SR-16 sounds; beats from https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
+    "setup": "Rock 1",
+    "pads":
+        {
+        "snare":           "wav/sr16-SNR01.wav",
+        "bass":            "wav/sr16-BD01.wav",
+        "hi_hat_open":     "wav/sr16-OP_HAT1a.wav",
+        },
+    "patterns":
+        {
+        "main_a":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "fill_a":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "main_b":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "fill_b":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            }
+        }
+    },
+
+   {
+    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
+    "setup": "Rock 2",
+    "pads":
+        {
+        "snare":           "wav/sr16-SNR01.wav",
+        "bass":            "wav/sr16-BD01.wav",
+        "hi_hat_open":     "wav/sr16-OP_HAT1a.wav",
+        },
+    "patterns":
+        {
+        "main_a":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "fill_a":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "main_b":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "fill_b":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            }
+        }
+    },
+
+   {
+    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
+    "setup": "Rock 3",
+    "pads":
+        {
+        "snare":           "wav/sr16-SNR01.wav",
+        "bass":            "wav/sr16-BD01.wav",
+        "hi_hat_open":     "wav/sr16-OP_HAT1a.wav",
+        },
+    "patterns":
+        {
+        "main_a":
+            {
+            "snare":           "---- 5-5- ---- 5-5-",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "fill_a":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "main_b":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            },
+        "fill_b":
+            {
+            "snare":           "---- 5--- ---- 5---",
+            "bass":            "9-9- ---- 9-9- ----",
+            "hi_hat_open":     "4--- 4--- 4--- 4---"
+            }
+        }
+    },
+
+   {
+    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
+    "setup": "Rock 6",
+    "pads":
+        {
+        "snare":           "wav/sr16-SNR01.wav",
+        "bass":            "wav/sr16-BD01.wav",
+        "hi_hat_closed":   "wav/sr16-CL_HAT1.wav",
+        },
+    "patterns":
+        {
+        "main_a":
+            {
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_closed":   "9-9- 9-9- 9-9- 9-9-"
+            },
+        "fill_a":
+            {
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_closed":   "9-9- 9-9- 9-9- 9-9-"
+            },
+        "main_b":
+            {
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_closed":   "9-9- 9-9- 9-9- 9-9-"
+            },
+        "fill_b":
+            {
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_closed":   "9-9- 9-9- 9-9- 9-9-"
+            }
+        }
+    }
+
+]
