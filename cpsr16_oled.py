@@ -325,11 +325,17 @@ def load_beats_and_mixer(audio_out, all_setups, setup_name):
     return this_setup, wavs_for_channels, wavetable, all_beats, mixer
 
 
-def calculate_bpm(sleep_time_seconds):
+def bpm_from_tap_time(tap_time_seconds):
+    """Get BPM from the user-input 'tap time'."""
+    return int(15/tap_time_seconds)
 
-    # FIXME: 1/4 = 60 BPM - I don't get this! :-/
 
-    return int(15/sleep_time_seconds)
+def bpm_to_sleep_time(bpm):
+    """Calculate the inter-tick (sixteenth note) delay time from the desired BPM."""
+    bps = bpm / 60
+    tick_delay = 1 / (bps * 4)
+    print(f" {bpm} BPM -> {bps} BPS -> {tick_delay} second tick-delay")
+    return tick_delay
 
 
 
@@ -364,11 +370,9 @@ def main():
     setup_name = setup_names[setup_index]
     this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
-
-    # FIXME: 1/4 = 60 BPM - I don't get this! :-/
-    TICK_SLEEP_TIME = 1/4
+    bpm = 120
+    TICK_SLEEP_TIME = bpm_to_sleep_time(bpm)
     TICK_SLEEP_TIME_MS = TICK_SLEEP_TIME * 1_000
-    bpm = calculate_bpm(TICK_SLEEP_TIME)
 
     if USE_FANCY_TIMING:
         print(f" ** {USE_FANCY_TIMING=}: {TICK_SLEEP_TIME=} -> {TICK_SLEEP_TIME_MS=} -> {bpm} BPM")
@@ -412,6 +416,9 @@ def main():
                 is_playing = True
                 # print(f" left -> {is_playing=}, {current_pattern_name=}")
 
+            # User-input "tap time".
+            # TODO: This could average the last few taps, or just take the last one, for now.
+            #
             if fill_button:
                 if last_tempo_tap == 0:
                     last_tempo_tap = time.monotonic_ns()
@@ -420,13 +427,13 @@ def main():
                     delta = now - last_tempo_tap 
                     last_tempo_tap = now
                     TICK_SLEEP_TIME = delta / 1000000000
-                    TICK_SLEEP_TIME /= 2
+                    TICK_SLEEP_TIME /= 4
 
                     # sanity check - ridiculously slow
                     if TICK_SLEEP_TIME > 1:
                         TICK_SLEEP_TIME = 1
 
-                    bpm = int(30/TICK_SLEEP_TIME)
+                    bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
             if b1 or b2 or b3:
