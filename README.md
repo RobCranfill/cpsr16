@@ -22,12 +22,13 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
 
 
 ## TO DO
-  * Make tick delay such that we look at the button many times during sleep, not just once.
+  * Show BPM on display.
 
 
 ## Credits
 * Shout out to the wonderful Adafruit!
-* Many sounds from https://freesound.org/
+* SR-16 samples from https://www.polynominal.com/sample-packs/Alesis-SR16-sample-pack/
+* Drum patterns from https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/
 
 
 ## Notes
