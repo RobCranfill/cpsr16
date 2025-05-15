@@ -1,8 +1,8 @@
 # cpsr16
 
-A CircuitPython-based Drum Machine, suitable for accompanying live performaces.
+A CircuitPython-based drum machine, suitable for accompanying live performaces.
 
-Inspired by the ancient and venerable Alesis SR-16 (hence the name, CircuitPython SR-16).
+Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>ircuit<b>P</b>ython <b>SR-16</b>.
 
 
 ## Features
@@ -18,7 +18,7 @@ Inspired by the ancient and venerable Alesis SR-16 (hence the name, CircuitPytho
      * If a fill is playing and the CF button is pressed again, after playing FILL X it will transition to MAIN Y.
   * Display
     * This is problematic. The Pico doesn't work well with SPI displays - not with what I'm asking of it.
-    * A small I2C OLED display seems to work OK. Adafruit product 4440.
+    * A small I2C OLED display seems to work OK. Adafruit product #4440 (128x32) or #326 (128x64).
 
 
 ## TO DO

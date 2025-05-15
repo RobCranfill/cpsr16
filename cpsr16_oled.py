@@ -20,7 +20,7 @@ import busio
 import keypad
 
 # our libs
-import Display_OLED
+import Display_OLED_64
 
 
 # TODO: make this variable
@@ -59,27 +59,17 @@ BUTTON_A = board.GP16
 BUTTON_B = board.GP17
 BUTTON_C = board.GP18
 
-
-
 # Mixer buffer size, per voice.
 # What is the best value? Esp w/r/t "fancy timing"?
-AUDIO_BUFFER_BYTES = 256 
+AUDIO_BUFFER_BYTES = 256
+
+SAMPLE_RATE = 22050
+CHANNEL_COUNT = 1
+BITS_PER_SAMPLE = 16
+SAMPLES_SIGNED = True
 
 # I thought this was useful, but setting the Mixer buffer size low seems to work fine!
 USE_FANCY_TIMING = False
-
-
-SAMPLE_RATE=22050
-CHANNEL_COUNT=1
-BITS_PER_SAMPLE=16
-SAMPLES_SIGNED=True
-
-
-
-# for performance improvement; otherwise we get audio glitches when auto-reloads.
-import supervisor
-supervisor.runtime.autoreload = False
-print(f"**** {supervisor.runtime.autoreload=}\n")
 
 
 def read_json(filename):
@@ -227,7 +217,7 @@ def load_beats_for_patterns(setup, wav_dict):
           ...
         )
     """
-    print(f"load_beats_for_patterns {setup=}")
+    # print(f"load_beats_for_patterns {setup=}")
 
     all_beats = {}
     for pattern_name, pattern_dict in setup["patterns"].items():
@@ -263,7 +253,7 @@ def load_beats_for_patterns(setup, wav_dict):
 
         all_beats[pattern_name] = track_hits
 
-    print(f"  * load_beats_for_patterns returning \n{all_beats}")
+    # print(f"  * load_beats_for_patterns returning \n{all_beats}")
     return all_beats
 
 def handle_all_events(button_list):
@@ -361,28 +351,17 @@ def main():
         sys.exit()
     # print(f" ! setups: {all_setups}")
 
-    # for future use in UI?
-    setup_name_list = get_setup_names(all_setups)
 
-########## from here we are working with one 'setup' at a time.
+########## From here we are working with one 'setup' at a time.
 ########## in part (mainly?) because we only want to load one set of WAV files.
 
-    # TODO: select via UI
-    setup_index = 0
-    setup_name = setup_name_list[setup_index] # first setup, for testing
 
     audio_out = init_audio()
 
-
-
-    # this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
-
-    # # Load the beats for all patterns for this setup.
-    # all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
-
-    # # Allocate a mixer with just enough channels.
-    # mixer = init_mixer(audio_out, len(wavs_for_channels))
-
+    # Load all the initial data. Whew!
+    setup_index = 0
+    setup_names = get_setup_names(all_setups)
+    setup_name = setup_names[setup_index]
     this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
 
@@ -413,7 +392,7 @@ def main():
     current_pattern_name = "main_a"
     playing_beats = all_beats[current_pattern_name]
 
-    display = Display_OLED.Display_OLED()
+    display = Display_OLED_64.Display_OLED()
     display.show_setup_name(setup_name)
     display.show_pattern_name(current_pattern_name)
 
@@ -453,32 +432,21 @@ def main():
             if b1 or b2 or b3:
                 # print(f"handle button {b1=} {b2=} {b3=}")
                 if b1:
-                    setup_index = (setup_index+1) % len(setup_name_list)
-                    setup_name = setup_name_list[setup_index] # first setup, for testing
+                    setup_index = (setup_index+1) % len(setup_names)
+                    setup_name = setup_names[setup_index]
                     print(f"go to next setup: {setup_name}")
                 elif b2:
-                    setup_index = (setup_index-1) % len(setup_name_list)
-                    setup_name = setup_name_list[setup_index] # first setup, for testing
+                    setup_index = (setup_index-1) % len(setup_names)
+                    setup_name = setup_names[setup_index]
                     print(f"go to prev setup: {setup_name}")
                 
-
-                # todo: refactor with above similar calls
-
-                # this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
-
-                # # Load the beats for all patterns for this setup.
-                # all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
-
-                # # Allocate a mixer with just enough channels.
-                # mixer = init_mixer(audio_out, len(wavs_for_channels))
-
+                # Get all the data for the new setup.
                 this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
-
 
                 display.show_setup_name(setup_name)
 
-            # Idle handler; if we haven't started playing, wait a tick.
-            # TODO: could be smarter; check current time and delay the right amount from last time.
+            # Idle handler.
+            # TODO: how long to idle? if at all.
             if not is_playing:
                 # print("  (idle)")
                 time.sleep(NOT_PLAYING_DELAY)
@@ -574,7 +542,7 @@ def main():
                             # print(f"     playing {track_index=} @ {volume=} ")
                             # print(f" - {mixer.voice}")
 
-                            # we don't seem to need to stop old voices - just re-start them!
+                            # We don't seem to need to stop old voices - just re-start them!
                             #
                             # if mixer.voice[channel].playing:
                             #     # print("stopping voice")
@@ -603,4 +571,10 @@ def main():
 
 
 # Let's do it!
+
+# for performance improvement; otherwise we get audio glitches when auto-reloads.
+import supervisor
+supervisor.runtime.autoreload = False
+print(f"**** {supervisor.runtime.autoreload=}\n")
+
 main()
