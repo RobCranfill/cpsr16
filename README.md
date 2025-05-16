@@ -20,9 +20,28 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
     * This is problematic. The Pico doesn't work well with SPI displays - not with what I'm asking of it.
     * A small I2C OLED display seems to work OK. Adafruit product #4440 (128x32) or #326 (128x64).
 
+## Hardware List
+  * Raspberry Pi Pico or similar MCU - https://www.adafruit.com/product/4864
+    * Or upgrade to an RP2350-based MCU!
+    * And/or use a Feather, for battery power!
+  * I2S Stereo decoder like https://www.adafruit.com/product/3678
+  * OLED display: 128 x 64 https://www.adafruit.com/product/326
+  * I2C cable - 6"-12"
+    * StemmaQT/Pigtails for Pico https://www.adafruit.com/product/4209
+    * StemmaQT/StemmaQT for Feather https://www.adafruit.com/product/4401
+  * 3 momentary pushbuttons (only 2 used so far!) like https://www.adafruit.com/product/1505
+  * 1/4" stereo ("TRS") jack.
+  * 1/8" panel-mount stereo extension cable like https://www.adafruit.com/product/3319
+  * 2-unit footswitch like Rowin Beatloop or Boss FS-6.
+  * Some kind of box
+  * USB power cable for MCU
+
+
 
 ## TO DO
-  * Show BPM on display.
+  * After a long period of no taps, don't count first one as setting time.
+  * Limit tap time to something reasonable, on both sides.
+  * Display timeout? (especially since we are using an OLED)
 
 
 ## Credits

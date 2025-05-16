@@ -403,6 +403,13 @@ def main():
 
     display.show_beat_number(f"{bpm} BPM")
 
+
+    DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
+    display_timeout_start = time.monotonic()
+    display_idle_flag = False
+    display_is_blanked = False
+
+
     print("\n**** READY ****")
 
     while True:
@@ -411,7 +418,15 @@ def main():
         #
         if not is_playing:
 
+            display_idle_flag = True
+
             stop_button, fill_button, b1, b2, b3 = get_all_events(switches)
+            if stop_button or fill_button or b1 or b2 or b3:
+                display_timeout_start = time.monotonic()
+                display_idle_flag = False
+                if display_is_blanked:
+                    print("Un-blanking display...")
+                    display.unblank()
 
             if stop_button:
                 print("* STARTING")
@@ -461,10 +476,19 @@ def main():
                     display.show_setup_name(setup_name)
 
             # Idle handler.
-            # TODO: how long to idle? if at all.
             if not is_playing:
+
+                # TODO: how long to idle? if at all?
                 # print("  (idle)")
                 time.sleep(NOT_PLAYING_DELAY)
+
+                if display_idle_flag:
+                    if time.monotonic() > display_timeout_start + DISPLAY_TIMEOUT_SECONDS:
+                        if not display_is_blanked:
+                            print("Blanking display...")
+                            display.blank()
+                            display_is_blanked = True
+
                 continue
 
         while is_playing:
@@ -509,7 +533,16 @@ def main():
                     advance_via_fill = False
                     is_in_fill = False
 
+                # FIXME: move this to top of loop?
+
                 stop_button, fill_button, b1, b2, b3 = get_all_events(switches)
+                if stop_button or fill_button or b1 or b2 or b3:
+                    display_timeout_start = time.monotonic()
+                    display_idle_flag = False
+                    if display_is_blanked:
+                        print("Un-blanking display...")
+                        display.unblank()
+
                 if stop_button:
                     is_playing = not is_playing
                     # print(f" left -> {is_playing=}, {current_pattern_name=}")

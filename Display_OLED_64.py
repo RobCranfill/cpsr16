@@ -86,6 +86,25 @@ class Display_OLED:
     def show_extra_info(self, whatever):
         self.__set_text_4(whatever)
 
+    def blank(self):
+
+        self.__hold_text_1 = self._text_area_1.text
+        self.__hold_text_2 = self._text_area_2.text
+        self.__hold_text_3 = self._text_area_3.text
+        self.__hold_text_4 = self._text_area_4.text
+
+        self.__set_text_1("")
+        self.__set_text_2("")
+        self.__set_text_3("")
+        self.__set_text_4("")
+
+    def unblank(self):
+
+        self.__set_text_1(self.__hold_text_1)
+        self.__set_text_2(self.__hold_text_2)
+        self.__set_text_3(self.__hold_text_3)
+        self.__set_text_4(self.__hold_text_4)
+
 
 ## Private methods
 
