@@ -436,6 +436,8 @@ def main():
                     bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
+                    display.show_beat_number(f"{bpm}")
+
             if b1 or b2 or b3:
                 # print(f"handle button {b1=} {b2=} {b3=}")
                 if b1:
