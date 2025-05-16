@@ -56,12 +56,19 @@ class Display_OLED:
         splash.append(text_area)
         self._text_area_2 = text_area
 
-        y += y_height
+        y += y_height + 6
         text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=y)
         splash.append(text_area)
         self._text_area_3 = text_area
 
+        y += y_height
+        text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=y)
+        splash.append(text_area)
+        self._text_area_4 = text_area
+
         # print(".__init__() OK!")
+
+## Public methods
 
     def show_setup_name(self, name):
         # self.__set_text_1(f"Setup: {name}")
@@ -73,8 +80,14 @@ class Display_OLED:
     
     # too much actvitiy for display?
     def show_beat_number(self, n):
-        self.__set_text_3(f"Beat: {n}")
+        # self.__set_text_3(f"Beat: {n}")
+        self.__set_text_3(n)
 
+    def show_extra_info(self, whatever):
+        self.__set_text_4(whatever)
+
+
+## Private methods
 
     def __set_text_1(self, text):
         self._text_area_1.text = text
@@ -84,5 +97,8 @@ class Display_OLED:
 
     def __set_text_3(self, text):
         self._text_area_3.text = text
+
+    def __set_text_4(self, text):
+        self._text_area_4.text = text
 
 

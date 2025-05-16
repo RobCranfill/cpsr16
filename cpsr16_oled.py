@@ -95,17 +95,17 @@ def init_audio():
     return audio_device
 
 
-
 def init_mixer(audio_out, n_voices: int):
 
     # print(f"Creating mixer with {n_voices} voices....")
     mixer = audiomixer.Mixer(voice_count=n_voices,
-                            sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
-                            bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
-                            buffer_size=AUDIO_BUFFER_BYTES * n_voices) # adjust buffer per voice?
+                             sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
+                             bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
+                             buffer_size=AUDIO_BUFFER_BYTES * n_voices)
 
     audio_out.play(mixer) # attach mixer to audio playback
     return mixer
+
 
 def init_all_switches():
     """return (footswitch 1, footswitch 2, button 1, button 2, button 3)"""
@@ -154,18 +154,18 @@ def load_pads(setup, setup_name):
 
 
 def get_setup_names(setups):
-    """For GUI?"""
+    """List of all setup names."""
     print("---- setups ----")
     names = []
     for s in setups:
         name = s["setup"]
-        print(f"\t{name}")
+        print(f"  {name}")
         names.append(name)
     return names
 
 
 def make_beats(pad_name, beat_pattern, channel):
-    """"
+    """
     Given the pad name and beat pattern, add all non-zero hits to a list of hits.
     Return a BEATS_PER_MEASURE-slot list of beats like (channel, vol) for this pad.
     """
@@ -256,7 +256,7 @@ def load_beats_for_patterns(setup, wav_dict):
     # print(f"  * load_beats_for_patterns returning \n{all_beats}")
     return all_beats
 
-def handle_all_events(button_list):
+def get_all_events(button_list):
     """Return (f1, f2, a1, a2, a3) states"""
 
     f1 = False
@@ -411,8 +411,7 @@ def main():
         #
         if not is_playing:
 
-            stop_button, fill_button, b1, b2, b3 = handle_all_events(switches)
-            # stop_button, fill_button = handle_footswitch_events(switches)
+            stop_button, fill_button, b1, b2, b3 = get_all_events(switches)
 
             if stop_button:
                 print("* STARTING")
@@ -439,7 +438,7 @@ def main():
                     bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
-                    display.show_beat_number(f"{bpm}")
+                    display.show_beat_number(f"{bpm} BPM")
 
             if b1 or b2 or b3:
                 setup_changed = False
@@ -471,6 +470,9 @@ def main():
         while is_playing:
 
             for tick_number in range(TICKS_PER_MEASURE):
+
+                # if tick_number % 4 == 0:
+                #     display.show_extra_info(BEAT_NAMES[tick_number])
 
                 tick_start_time_ms = supervisor.ticks_ms()
 
@@ -504,10 +506,10 @@ def main():
                         display.show_pattern_name(current_pattern_name)
                         # display.render()
 
-                    is_in_fill = False
                     advance_via_fill = False
+                    is_in_fill = False
 
-                stop_button, fill_button, b1, b2, b3 = handle_all_events(switches)
+                stop_button, fill_button, b1, b2, b3 = get_all_events(switches)
                 if stop_button:
                     is_playing = not is_playing
                     # print(f" left -> {is_playing=}, {current_pattern_name=}")
