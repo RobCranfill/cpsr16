@@ -427,6 +427,7 @@ def main():
                 if display_is_blanked:
                     print("Un-blanking display...")
                     display.unblank()
+                    display_is_blanked = False
 
             if stop_button:
                 print("* STARTING")
@@ -542,6 +543,7 @@ def main():
                     if display_is_blanked:
                         print("Un-blanking display...")
                         display.unblank()
+                        display_is_blanked = False
 
                 if stop_button:
                     is_playing = not is_playing
