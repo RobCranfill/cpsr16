@@ -311,18 +311,19 @@ def load_setup_pads(setups, name):
 
 
 def load_beats_and_mixer(audio_out, all_setups, setup_name):
-    """Return this_setup, wavs_for_channels, wavetable, all_beats, mixer """
+    """Return this_setup, wavs_for_channels, wavetable, setup_beats, mixer """
 
+    print(f"Loading setup '{setup_name}'")
 
     this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
 
     # Load the beats for all patterns for this setup.
-    all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
+    setup_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
 
     # Allocate a mixer with just enough channels.
     mixer = init_mixer(audio_out, len(wavs_for_channels))
 
-    return this_setup, wavs_for_channels, wavetable, all_beats, mixer
+    return this_setup, wavs_for_channels, wavetable, setup_beats, mixer
 
 
 def bpm_from_tap_time(tap_time_seconds):
@@ -368,7 +369,7 @@ def main():
     setup_index = 0
     setup_names = get_setup_names(all_setups)
     setup_name = setup_names[setup_index]
-    this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+    this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
     bpm = 120
     TICK_SLEEP_TIME = bpm_to_sleep_time(bpm)
@@ -394,11 +395,13 @@ def main():
     last_tempo_tap = 0
 
     current_pattern_name = "main_a"
-    playing_beats = all_beats[current_pattern_name]
+    plattern_beats = setup_beats[current_pattern_name]
 
     display = Display_OLED_64.Display_OLED()
     display.show_setup_name(setup_name)
     display.show_pattern_name(current_pattern_name)
+
+    display.show_beat_number(f"{bpm} BPM")
 
     print("\n**** READY ****")
 
@@ -439,20 +442,24 @@ def main():
                     display.show_beat_number(f"{bpm}")
 
             if b1 or b2 or b3:
+                setup_changed = False
                 # print(f"handle button {b1=} {b2=} {b3=}")
                 if b1:
                     setup_index = (setup_index+1) % len(setup_names)
                     setup_name = setup_names[setup_index]
                     print(f"go to next setup: {setup_name}")
+                    setup_changed = True
                 elif b2:
                     setup_index = (setup_index-1) % len(setup_names)
                     setup_name = setup_names[setup_index]
                     print(f"go to prev setup: {setup_name}")
+                    setup_changed = True
                 
-                # Get all the data for the new setup.
-                this_setup, wavs_for_channels, wavetable, all_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
-
-                display.show_setup_name(setup_name)
+                if setup_changed:
+                    # Get all the data for the new setup.
+                    this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+                    plattern_beats = setup_beats[current_pattern_name]
+                    display.show_setup_name(setup_name)
 
             # Idle handler.
             # TODO: how long to idle? if at all.
@@ -478,7 +485,7 @@ def main():
                             current_pattern_name = "main_b"
                         else:
                             current_pattern_name = "main_a"
-                        playing_beats = all_beats[current_pattern_name]
+                        plattern_beats = setup_beats[current_pattern_name]
 
                         # print(f"  -> Advanced to pattern {current_pattern_name=}")
                         display.show_pattern_name(current_pattern_name)
@@ -491,7 +498,7 @@ def main():
                         else:
                             current_pattern_name = "main_b"
 
-                        playing_beats = all_beats[current_pattern_name]
+                        plattern_beats = setup_beats[current_pattern_name]
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
                         display.show_pattern_name(current_pattern_name)
@@ -507,7 +514,7 @@ def main():
                     if not is_playing:
                         print("* STOPPING")
                         current_pattern_name = "main_a"
-                        playing_beats = all_beats[current_pattern_name]
+                        plattern_beats = setup_beats[current_pattern_name]
                         break
 
                 if fill_button:
@@ -520,8 +527,8 @@ def main():
                             current_pattern_name = "fill_a"
                         else:
                             current_pattern_name = "fill_b"
-                        playing_beats = all_beats[current_pattern_name]
-                        fill_downbeat = playing_beats[0]
+                        plattern_beats = setup_beats[current_pattern_name]
+                        fill_downbeat = plattern_beats[0]
                         # print(f"  -> Switched to pattern {current_pattern_name=}")
                         # print(f"     Saving fill downbeat {fill_downbeat=}")
 
@@ -533,7 +540,7 @@ def main():
                     # print(f"  Playing fill downbeat {hit_list=}")
                     fill_downbeat = None
                 else:
-                    hit_list = playing_beats[tick_number]
+                    hit_list = plattern_beats[tick_number]
                 
                 # print(f"  Hit list: {hit_list}")
                 if len(hit_list) > 0:
