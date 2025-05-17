@@ -7,9 +7,11 @@
 # stdlibs
 import gc
 import json
+import os
 import random
 import sys
 import time
+import traceback
 
 # adafruit libs
 import audiobusio
@@ -17,13 +19,14 @@ import audiocore
 import audiomixer
 import board
 import busio
+import displayio
 import keypad
 
 # our libs
 import Display_OLED_64
 
 
-# TODO: make this variable
+# TODO: make this variable???
 # This is the smallest note/beat we handle. 16 means sixteenth notes, etc.
 TICKS_PER_MEASURE = 16
 
@@ -33,12 +36,17 @@ BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh
 # The data file we read.
 DATA_FILE_NAME = "rhythms-4-sr16.dict"
 
-# idle loop hander delay
+# idle loop hander delay - needed?
 NOT_PLAYING_DELAY = 0.01
 
+############# Hardware pin assignments
 
 # TODO: put pin assignments in a hardware config file?
-# TODO: along with other things like sample rates?
+# TODO: along with other things like sample rates and channel counts?
+
+# For Pico
+BOARD_SCL = board.GP1
+BOARD_SDA = board.GP0
 
 # for I2S audio with external I2S DAC board
 
@@ -52,12 +60,12 @@ AUDIO_OUT_I2S_BIT  = board.GP8
 AUDIO_OUT_I2S_WORD = board.GP9
 AUDIO_OUT_I2S_DATA = board.GP10
 
-SWITCH_1 = board.GP28
-SWITCH_2 = board.GP27
+SWITCH_1 = board.GP28 # left-hand (haha) footswitch: start/stop, mostly
+SWITCH_2 = board.GP27 # right-hand footswitch: fill, tap
 
-BUTTON_A = board.GP16
-BUTTON_B = board.GP17
-BUTTON_C = board.GP18
+BUTTON_A = board.GP17 # middle = up
+BUTTON_B = board.GP16 # left = down
+BUTTON_C = board.GP18 # does nothing yet
 
 # Mixer buffer size, per voice.
 # What is the best value? Esp w/r/t "fancy timing"?
@@ -71,9 +79,17 @@ SAMPLES_SIGNED = True
 # I thought this was useful, but setting the Mixer buffer size low seems to work fine!
 USE_FANCY_TIMING = False
 
+DICT_KEYWORD_SETUP = "setup"
+DICT_KEYWORD_PADS = "pads"
+DICT_KEYWORD_PATTERNS = "patterns"
+DICT_KEYWORD_MAIN_A = "main a"
+DICT_KEYWORD_FILL_A = "fill a"
+DICT_KEYWORD_MAIN_B = "main b"
+DICT_KEYWORD_FILL_B = "fill b"
+
 
 def read_json(filename):
-    """Returns the de-JSON-ed data."""
+    """Returns the de-JSON-ed data, a big object heirarchy."""
 
     print(f"* Reading config {filename}...")
     with open(filename) as f:
@@ -86,9 +102,9 @@ def read_json(filename):
 
 
 def init_audio():
-    """Return (audio, mixer); audio object only so it doesn't get GCed."""
+    """Return the I2S audio device."""
 
-    # TODO: catch error?
+    # TODO: catch exceptions
     audio_device = audiobusio.I2SOut(
         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
     
@@ -116,7 +132,7 @@ def load_setup(setups, setup_name):
     """Find and return the indicated setup, or None."""
     setup = None
     for s in setups:
-        if s["setup"] == setup_name:
+        if s[DICT_KEYWORD_SETUP] == setup_name:
             setup = s
             break
     return setup
@@ -127,7 +143,7 @@ def load_pads(setup, setup_name):
     Load the wave files for the pads and assign mixer channels.
     Return dict of {pad_name: (chan,wav), ...}.
     """
-    pads = setup["pads"]
+    pads = setup[DICT_KEYWORD_PADS]
 
     # print(f"Loading {len(pads)} wav files for '{setup_name}'...")
 
@@ -158,7 +174,7 @@ def get_setup_names(setups):
     print("---- setups ----")
     names = []
     for s in setups:
-        name = s["setup"]
+        name = s[DICT_KEYWORD_SETUP]
         print(f"  {name}")
         names.append(name)
     return names
@@ -220,7 +236,7 @@ def load_beats_for_patterns(setup, wav_dict):
     # print(f"load_beats_for_patterns {setup=}")
 
     all_beats = {}
-    for pattern_name, pattern_dict in setup["patterns"].items():
+    for pattern_name, pattern_dict in setup[DICT_KEYWORD_PATTERNS].items():
 
         # print(f" - loading pattern '{pattern_name}' from {pattern_dict=}")
         tracks = []
@@ -339,7 +355,6 @@ def bpm_to_sleep_time(bpm):
     return tick_delay
 
 
-
 ###########################################################
 def main():
 
@@ -394,10 +409,20 @@ def main():
 
     last_tempo_tap = 0
 
-    current_pattern_name = "main_a"
+    current_pattern_name = DICT_KEYWORD_MAIN_A
     plattern_beats = setup_beats[current_pattern_name]
 
-    display = Display_OLED_64.Display_OLED()
+    try:
+        # Not sure why this is needed, but it seems to be:
+        displayio.release_displays()
+
+        i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
+    except Exception as e:
+        print("No I2C bus?")
+        traceback.print_exception(e)
+        return # from main
+
+    display = Display_OLED_64.Display_OLED(i2c, 0x3D)
     display.show_setup_name(setup_name)
     display.show_pattern_name(current_pattern_name)
 
@@ -511,28 +536,26 @@ def main():
 
                     if advance_via_fill:
                         # print(" ** advance_via_fill!")
-                        if current_pattern_name == "fill_a":
-                            current_pattern_name = "main_b"
+                        if current_pattern_name == DICT_KEYWORD_FILL_A:
+                            current_pattern_name = DICT_KEYWORD_MAIN_B
                         else:
-                            current_pattern_name = "main_a"
+                            current_pattern_name = DICT_KEYWORD_MAIN_A
                         plattern_beats = setup_beats[current_pattern_name]
 
                         # print(f"  -> Advanced to pattern {current_pattern_name=}")
                         display.show_pattern_name(current_pattern_name)
-                        # display.render()
 
                     elif is_in_fill:
                         # no advance - go back to main pattern
-                        if current_pattern_name == "fill_a":
-                            current_pattern_name = "main_a"
+                        if current_pattern_name == DICT_KEYWORD_FILL_A:
+                            current_pattern_name = DICT_KEYWORD_MAIN_A
                         else:
-                            current_pattern_name = "main_b"
+                            current_pattern_name = DICT_KEYWORD_MAIN_B
 
                         plattern_beats = setup_beats[current_pattern_name]
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
                         display.show_pattern_name(current_pattern_name)
-                        # display.render()
 
                     advance_via_fill = False
                     is_in_fill = False
@@ -553,7 +576,7 @@ def main():
                     # print(f" left -> {is_playing=}, {current_pattern_name=}")
                     if not is_playing:
                         print("* STOPPING")
-                        current_pattern_name = "main_a"
+                        current_pattern_name = DICT_KEYWORD_MAIN_A
                         plattern_beats = setup_beats[current_pattern_name]
                         break
 
@@ -563,10 +586,10 @@ def main():
                         # print(f"  ->  Will advance to next pattern...")
                     else:
                         is_in_fill = True
-                        if current_pattern_name == "main_a":
-                            current_pattern_name = "fill_a"
+                        if current_pattern_name == DICT_KEYWORD_MAIN_A:
+                            current_pattern_name = DICT_KEYWORD_FILL_A
                         else:
-                            current_pattern_name = "fill_b"
+                            current_pattern_name = DI
                         plattern_beats = setup_beats[current_pattern_name]
                         fill_downbeat = plattern_beats[0]
                         # print(f"  -> Switched to pattern {current_pattern_name=}")

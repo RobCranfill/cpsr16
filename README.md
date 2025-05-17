@@ -37,11 +37,13 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
   * USB power cable for MCU
 
 
-
 ## TO DO
   * After a long period of no taps, don't count first one as setting time.
   * Limit tap time to something reasonable, on both sides.
-  * Display timeout? (especially since we are using an OLED)
+  * Display timeout: show something - a wandering char of some sort?
+  * Get rid of unused code - including Display superclass?
+  * Implement hardware config file?
+  * "Ready" beep?
 
 
 ## Credits

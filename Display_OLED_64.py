@@ -1,5 +1,5 @@
 """Display using Adafruit 128x64 I2C OLED, product ID 326.
-   Display area is x rows of y characters."""
+   Two lines of double height, then two single-height lines."""
 
 import board
 import busio
@@ -13,12 +13,12 @@ from adafruit_display_text import label
 import terminalio
 
 
-I2C_ADDRESS = 0x3D
+# I2C_ADDRESS = 0x3D
 WIDTH  = 128
 HEIGHT =  64 
 
-BOARD_SCL = board.GP1
-BOARD_SDA = board.GP0
+# BOARD_SCL = board.GP1
+# BOARD_SDA = board.GP0
 
 BLACK = 0x00_00_00
 WHITE = 0xFF_FF_FF
@@ -27,12 +27,13 @@ ANIMATION_INTERVAL = 1.0 # seconds
 
 
 class Display_OLED:
-    """TODO: pass in i2c bus?"""
-    def __init__(self):
+    """For Adafruit 128x64 I2C OLED, product ID 326."""
+
+    def __init__(self, i2c, oled_i2c_address):
 
         displayio.release_displays()
-        i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
-        display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=I2C_ADDRESS)
+
+        display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=oled_i2c_address)
         display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=WIDTH, height=HEIGHT)
 
         # Make the display context
@@ -110,7 +111,6 @@ class Display_OLED:
         self.__set_text_3(self.__hold_text_3)
         self.__set_text_4(self.__hold_text_4)
 
-
     def animate_idle(self):
         if time.monotonic() - ANIMATION_INTERVAL > self.__last_anim:
             c = chr(random.randrange(97, 97 + 26))
@@ -134,5 +134,4 @@ class Display_OLED:
 
     def __set_text_4(self, text):
         self._text_area_4.text = text
-
 
