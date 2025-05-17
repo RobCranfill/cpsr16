@@ -13,12 +13,8 @@ from adafruit_display_text import label
 import terminalio
 
 
-# I2C_ADDRESS = 0x3D
 WIDTH  = 128
 HEIGHT =  64 
-
-# BOARD_SCL = board.GP1
-# BOARD_SDA = board.GP0
 
 BLACK = 0x00_00_00
 WHITE = 0xFF_FF_FF
@@ -47,9 +43,9 @@ class Display_OLED:
         bg_sprite = displayio.TileGrid(color_bitmap, pixel_shader=color_palette, x=0, y=0)
         splash.append(bg_sprite)
         
+        # First two lines are double-size.
 
         y_height = 11
-
         y = 8
         text_area = label.Label(terminalio.FONT, text="DM Ready!", scale=2, color=WHITE, x=0, y=y)
         splash.append(text_area)
@@ -60,7 +56,7 @@ class Display_OLED:
         splash.append(text_area)
         self._text_area_2 = text_area
 
-    # display is 21 whole characters wide (partal 22nd)
+        # Bottom two lines are 21 whole characters wide (a partal 22nd)
 
         y += y_height + 6
         text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=y)
@@ -79,6 +75,7 @@ class Display_OLED:
 ## Public methods
 
     def show_setup_name(self, name):
+        # Labelling these takes too much space:
         # self.__set_text_1(f"Setup: {name}")
         self.__set_text_1(name)
 
@@ -86,10 +83,8 @@ class Display_OLED:
         # self.__set_text_2(f"Patt: {name}")
         self.__set_text_2(name)
     
-    # too much actvitiy for display?
-    def show_beat_number(self, n):
-        # self.__set_text_3(f"Beat: {n}")
-        self.__set_text_3(n)
+    def show_bpm(self, bpm):
+        self.__set_text_3(f"{bpm} BPM")
 
     def show_extra_info(self, whatever):
         self.__set_text_4(whatever)

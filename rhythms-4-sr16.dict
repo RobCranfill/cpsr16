@@ -1,5 +1,42 @@
 [
     {
+    "comment": "For testing, not necessarily for keeping.",
+    "setup": "Rock 0",
+    "pads":
+        {
+        "snare":           "wav/sr16-SNR01.wav",
+        "bass":            "wav/sr16-BD01.wav",
+        "hi_hat_open":     "wav/sr16-OP_HAT1a.wav",
+        },
+    "patterns":
+        {
+        "main a":
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9--- ----",
+            },
+        "fill a"
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9-9- ----"
+            },
+        "main b":
+            {
+            "hi_hat_open":     "9-9- 9-9- 9-9- 9-9-",
+            "snare":           "--9- --9- --9- --9-",
+            "bass":            "9--- ---- 9--- ----"
+            },
+        "fill b":
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- 9-9- 9-9- 9999",
+            "bass":            "9--- ---- 9--- ----"
+            }
+        }
+    },
+{
     "comment": "First try using SR-16 sounds; beats from https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
     "setup": "Rock 1",
     "pads":
