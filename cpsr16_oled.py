@@ -461,6 +461,7 @@ def main():
                 print("* STARTING")
                 is_playing = True
                 # print(f" left -> {is_playing=}, {current_pattern_name=}")
+                last_tempo_tap = 0
 
             # User-input "tap time".
             # TODO: This could average the last few taps, or just take the last one, for now.
@@ -480,6 +481,11 @@ def main():
                         TICK_SLEEP_TIME = 1
 
                     bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
+                    if bpm < 15:
+                        bpm = 15
+                    elif bpm > 240:
+                        bpm = 240
+
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
                     display.show_beat_number(f"{bpm} BPM")

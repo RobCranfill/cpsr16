@@ -1,6 +1,8 @@
 # cpsr16
 
-A CircuitPython-based drum machine, suitable for accompanying live performaces.
+A CircuitPython-based drum machine, suitable for accompanying live performaces. 
+
+Uses a 2-button footswitch to advance patterns, select fills, tap tempo.
 
 Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>ircuit<b>P</b>ython <b>SR-16</b>.
 
@@ -38,9 +40,6 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
 
 
 ## TO DO
-  * After a long period of no taps, don't count first one as setting time.
-  * Limit tap time to something reasonable, on both sides.
-  * Display timeout: show something - a wandering char of some sort?
   * Get rid of unused code - including Display superclass?
   * Implement hardware config file?
   * "Ready" beep?
