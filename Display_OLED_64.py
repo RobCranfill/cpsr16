@@ -3,6 +3,7 @@
 
 import board
 import busio
+import random
 import time
 
 import displayio
@@ -22,9 +23,11 @@ BOARD_SDA = board.GP0
 BLACK = 0x00_00_00
 WHITE = 0xFF_FF_FF
 
+ANIMATION_INTERVAL = 1.0 # seconds
+
 
 class Display_OLED:
-
+    """TODO: pass in i2c bus?"""
     def __init__(self):
 
         displayio.release_displays()
@@ -56,6 +59,8 @@ class Display_OLED:
         splash.append(text_area)
         self._text_area_2 = text_area
 
+    # display is 21 whole characters wide (partal 22nd)
+
         y += y_height + 6
         text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=y)
         splash.append(text_area)
@@ -65,6 +70,8 @@ class Display_OLED:
         text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=y)
         splash.append(text_area)
         self._text_area_4 = text_area
+
+        self.__last_anim = time.monotonic()
 
         # print(".__init__() OK!")
 
@@ -87,7 +94,6 @@ class Display_OLED:
         self.__set_text_4(whatever)
 
     def blank(self):
-
         self.__hold_text_1 = self._text_area_1.text
         self.__hold_text_2 = self._text_area_2.text
         self.__hold_text_3 = self._text_area_3.text
@@ -99,11 +105,20 @@ class Display_OLED:
         self.__set_text_4("")
 
     def unblank(self):
-
         self.__set_text_1(self.__hold_text_1)
         self.__set_text_2(self.__hold_text_2)
         self.__set_text_3(self.__hold_text_3)
         self.__set_text_4(self.__hold_text_4)
+
+
+    def animate_idle(self):
+        if time.monotonic() - ANIMATION_INTERVAL > self.__last_anim:
+            c = chr(random.randrange(97, 97 + 26))
+            p = random.randint(0, 20)
+            l = [' '] * 21
+            l[p] = c
+            self.__set_text_4("".join(l))
+            self.__last_anim = time.monotonic()
 
 
 ## Private methods

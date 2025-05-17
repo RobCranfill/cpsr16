@@ -428,6 +428,9 @@ def main():
                     print("Un-blanking display...")
                     display.unblank()
                     display_is_blanked = False
+            else:
+                if display_is_blanked:
+                    display.animate_idle()
 
             if stop_button:
                 print("* STARTING")
