@@ -23,7 +23,9 @@ import displayio
 import keypad
 
 # our libs
-import Display_OLED_64
+# import Display_OLED_64
+import Display_OLED
+# import Display_text
 
 
 # TODO: make this variable???
@@ -45,27 +47,39 @@ NOT_PLAYING_DELAY = 0.01
 # TODO: along with other things like sample rates and channel counts?
 
 # For Pico
-BOARD_SCL = board.GP1
-BOARD_SDA = board.GP0
+# BOARD_SCL = board.GP1
+# BOARD_SDA = board.GP0
 
 # for I2S audio with external I2S DAC board
 
-# for my RP2350 testbed:
-# AUDIO_OUT_I2S_BIT  = board.D9
-# AUDIO_OUT_I2S_WORD = board.D10
-# AUDIO_OUT_I2S_DATA = board.D11
+# hardware-dependent section -------------------------------------------------
+# for my RP2350 testbed -------------------------------------------------
+AUDIO_OUT_I2S_BIT  = board.D9
+AUDIO_OUT_I2S_WORD = board.D10
+AUDIO_OUT_I2S_DATA = board.D11
 
-# for RP Pico
-AUDIO_OUT_I2S_BIT  = board.GP8
-AUDIO_OUT_I2S_WORD = board.GP9
-AUDIO_OUT_I2S_DATA = board.GP10
+SWITCH_1 = board.D5 # left-hand (haha) footswitch: start/stop, mostly
+SWITCH_2 = board.D6 # right-hand footswitch: fill, tap
 
-SWITCH_1 = board.GP28 # left-hand (haha) footswitch: start/stop, mostly
-SWITCH_2 = board.GP27 # right-hand footswitch: fill, tap
+BUTTON_A = board.D12 # middle = up
+# not yet:
+BUTTON_B = board.D13 # left = down
+BUTTON_C = board.D25 # does nothing yet
 
-BUTTON_A = board.GP17 # middle = up
-BUTTON_B = board.GP16 # left = down
-BUTTON_C = board.GP18 # does nothing yet
+# for RP Pico -------------------------------------------------
+# AUDIO_OUT_I2S_BIT  = board.GP8
+# AUDIO_OUT_I2S_WORD = board.GP9
+# AUDIO_OUT_I2S_DATA = board.GP10
+
+# SWITCH_1 = board.GP28 # left-hand (haha) footswitch: start/stop, mostly
+# SWITCH_2 = board.GP27 # right-hand footswitch: fill, tap
+
+# BUTTON_A = board.GP17 # middle = up
+# BUTTON_B = board.GP16 # left = down
+# BUTTON_C = board.GP18 # does nothing yet
+
+# end hardware-dependent section -------------------------------------------------
+
 
 # Mixer buffer size, per voice.
 # What is the best value? Esp w/r/t "fancy timing"?
@@ -416,13 +430,21 @@ def main():
         # Not sure why this is needed, but it seems to be:
         displayio.release_displays()
 
-        i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
+        # FIXME: RP2350/Pico
+        # i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
+        i2c = board.I2C()
+
     except Exception as e:
         print("No I2C bus?")
         traceback.print_exception(e)
         return # from main
 
-    display = Display_OLED_64.Display_OLED(i2c, 0x3D)
+    # PICK ONE
+    # display = Display_OLED_64.Display_OLED(i2c, 0x3D)
+    # display = Display_text.Display_text()
+    display = Display_OLED.Display_OLED(i2c, 0x3C)
+
+
     display.show_setup_name(setup_name)
     display.show_pattern_name(current_pattern_name)
 
@@ -595,7 +617,7 @@ def main():
                         if current_pattern_name == DICT_KEYWORD_MAIN_A:
                             current_pattern_name = DICT_KEYWORD_FILL_A
                         else:
-                            current_pattern_name = DI
+                            current_pattern_name = DICT_KEYWORD_FILL_B
                         plattern_beats = setup_beats[current_pattern_name]
                         fill_downbeat = plattern_beats[0]
                         # print(f"  -> Switched to pattern {current_pattern_name=}")

@@ -23,11 +23,11 @@ WHITE = 0xFF_FF_FF
 
 class Display_OLED:
 
-    def __init__(self):
+    def __init__(self, i2c, oled_i2c_address):
 
         displayio.release_displays()
-        i2c = busio.I2C(scl=board.GP1, sda=board.GP0)
-        display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=0x3c)
+
+        display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=oled_i2c_address)
         display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=32)
 
         # Make the display context
