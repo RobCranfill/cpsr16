@@ -7,9 +7,11 @@
 # stdlibs
 import gc
 import json
+import os
 import random
 import sys
 import time
+import traceback
 
 # adafruit libs
 import audiobusio
@@ -17,12 +19,16 @@ import audiocore
 import audiomixer
 import board
 import busio
-
+import displayio
 import keypad
-from digitalio import DigitalInOut, Pull
+
+# our libs
+# import Display_OLED_64
+import Display_OLED
+# import Display_text
 
 
-# TODO: make this variable
+# TODO: make this variable???
 # This is the smallest note/beat we handle. 16 means sixteenth notes, etc.
 TICKS_PER_MEASURE = 16
 
@@ -30,39 +36,76 @@ TICKS_PER_MEASURE = 16
 BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
 # The data file we read.
-DATA_FILE_NAME = "rhythms.dict"
+DATA_FILE_NAME = "rhythms-4-sr16.dict"
 
-# idle loop hander delay
+# idle loop hander delay - needed?
 NOT_PLAYING_DELAY = 0.01
 
-AUDIO_BUFFER_KBYTES = 1 # per voice
+############# Hardware pin assignments
 
-# TODO: put pin assignments in a hardware config file
+# TODO: put pin assignments in a hardware config file?
+# TODO: along with other things like sample rates and channel counts?
+
+# For Pico
+# BOARD_SCL = board.GP1
+# BOARD_SDA = board.GP0
 
 # for I2S audio with external I2S DAC board
 
-# for my RP2350 testbed:
-# AUDIO_OUT_I2S_BIT  = board.D9
-# AUDIO_OUT_I2S_DATA = board.D11
-# AUDIO_OUT_I2S_WORD = board.D10
+# hardware-dependent section -------------------------------------------------
+# for my RP2350 testbed -------------------------------------------------
+AUDIO_OUT_I2S_BIT  = board.D9
+AUDIO_OUT_I2S_WORD = board.D10
+AUDIO_OUT_I2S_DATA = board.D11
 
-# for RP Pico
-AUDIO_OUT_I2S_BIT  = board.GP8
-AUDIO_OUT_I2S_DATA = board.GP10
-AUDIO_OUT_I2S_WORD = board.GP9
+SWITCH_1 = board.D5 # left-hand (haha) footswitch: start/stop, mostly
+SWITCH_2 = board.D6 # right-hand footswitch: fill, tap
 
-SWITCH_1 = board.GP28
-SWITCH_2 = board.GP27
+BUTTON_A = board.D12 # middle = up
+# not yet:
+BUTTON_B = board.D13 # left = down
+BUTTON_C = board.D25 # does nothing yet
+
+# for RP Pico -------------------------------------------------
+# AUDIO_OUT_I2S_BIT  = board.GP8
+# AUDIO_OUT_I2S_WORD = board.GP9
+# AUDIO_OUT_I2S_DATA = board.GP10
+
+# SWITCH_1 = board.GP28 # left-hand (haha) footswitch: start/stop, mostly
+# SWITCH_2 = board.GP27 # right-hand footswitch: fill, tap
+
+# BUTTON_A = board.GP17 # middle = up
+# BUTTON_B = board.GP16 # left = down
+# BUTTON_C = board.GP18 # does nothing yet
+
+# end hardware-dependent section -------------------------------------------------
 
 
-import supervisor
-supervisor.runtime.autoreload = False
-print(f"**** {supervisor.runtime.autoreload=}\n")
+# Mixer buffer size, per voice.
+# What is the best value? Esp w/r/t "fancy timing"?
+AUDIO_BUFFER_BYTES = 256
+
+SAMPLE_RATE = 22050
+CHANNEL_COUNT = 1
+BITS_PER_SAMPLE = 16
+SAMPLES_SIGNED = True
+
+# I thought this was useful, but setting the Mixer buffer size low seems to work fine!
+USE_FANCY_TIMING = False
+
+DICT_KEYWORD_SETUP = "setup"
+DICT_KEYWORD_PADS = "pads"
+DICT_KEYWORD_PATTERNS = "patterns"
+DICT_KEYWORD_MAIN_A = "main a"
+DICT_KEYWORD_FILL_A = "fill a"
+DICT_KEYWORD_MAIN_B = "main b"
+DICT_KEYWORD_FILL_B = "fill b"
 
 
 def read_json(filename):
-    """Returns the de-JSON-ed data."""
+    """Returns the de-JSON-ed data, a big object heirarchy."""
 
+    print(f"* Reading config {filename}...")
     with open(filename) as f:
         data = f.read()
     # print(f">>> read_json: {data}")
@@ -72,35 +115,38 @@ def read_json(filename):
     return result
 
 
-def init_audio(n_voices):
-    """Return (audio, mixer); audio object only so it doesn't get GCed."""
+def init_audio():
+    """Return the I2S audio device."""
 
-    au = audiobusio.I2SOut(
+    # TODO: catch exceptions
+    audio_device = audiobusio.I2SOut(
         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
+    
+    return audio_device
+
+
+def init_mixer(audio_out, n_voices: int):
 
     # print(f"Creating mixer with {n_voices} voices....")
-    mx = audiomixer.Mixer(voice_count=n_voices,
-                            sample_rate=22050, channel_count=2,
-                            bits_per_sample=16, samples_signed=True,
-                            buffer_size=AUDIO_BUFFER_KBYTES * 1024 * n_voices) # adjust buffer per voice?
+    mixer = audiomixer.Mixer(voice_count=n_voices,
+                             sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
+                             bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
+                             buffer_size=AUDIO_BUFFER_BYTES * n_voices)
 
-    au.play(mx) # attach mixer to audio playback
-
-    # We must also return the "audio" object so it doesn't get garbage collected!
-    return au, mx
+    audio_out.play(mixer) # attach mixer to audio playback
+    return mixer
 
 
-def init_footswitch():
-    """Using 'keypad' util."""
-    keys = keypad.Keys((SWITCH_1,SWITCH_2), value_when_pressed=False, pull=True)
-    return keys
+def init_all_switches():
+    """return (footswitch 1, footswitch 2, button 1, button 2, button 3)"""
+    return keypad.Keys((SWITCH_1, SWITCH_2, BUTTON_A, BUTTON_B, BUTTON_C), value_when_pressed=False, pull=True)
 
 
 def load_setup(setups, setup_name):
     """Find and return the indicated setup, or None."""
     setup = None
     for s in setups:
-        if s["setup"] == setup_name:
+        if s[DICT_KEYWORD_SETUP] == setup_name:
             setup = s
             break
     return setup
@@ -111,7 +157,7 @@ def load_pads(setup, setup_name):
     Load the wave files for the pads and assign mixer channels.
     Return dict of {pad_name: (chan,wav), ...}.
     """
-    pads = setup["pads"]
+    pads = setup[DICT_KEYWORD_PADS]
 
     # print(f"Loading {len(pads)} wav files for '{setup_name}'...")
 
@@ -132,24 +178,24 @@ def load_pads(setup, setup_name):
     # print(f"  * {wavs=}")
 
     m2 = get_free_mem()
-    print(f"load_pads:  Free mem after: {m2} - delta = {m1-m2}")
+    print(f"load_pads:  Free mem after: {m2} - delta = {m1-m2}\n")
 
     return wavs
 
 
 def get_setup_names(setups):
-    """For GUI?"""
+    """List of all setup names."""
     print("---- setups ----")
     names = []
     for s in setups:
-        name = s["setup"]
-        print(f"\t{name}")
+        name = s[DICT_KEYWORD_SETUP]
+        print(f"  {name}")
         names.append(name)
     return names
 
 
 def make_beats(pad_name, beat_pattern, channel):
-    """"
+    """
     Given the pad name and beat pattern, add all non-zero hits to a list of hits.
     Return a BEATS_PER_MEASURE-slot list of beats like (channel, vol) for this pad.
     """
@@ -201,10 +247,10 @@ def load_beats_for_patterns(setup, wav_dict):
           ...
         )
     """
-    # print(f"load_beats_for_patterns...")
+    # print(f"load_beats_for_patterns {setup=}")
 
     all_beats = {}
-    for pattern_name, pattern_dict in setup["patterns"].items():
+    for pattern_name, pattern_dict in setup[DICT_KEYWORD_PATTERNS].items():
 
         # print(f" - loading pattern '{pattern_name}' from {pattern_dict=}")
         tracks = []
@@ -240,22 +286,34 @@ def load_beats_for_patterns(setup, wav_dict):
     # print(f"  * load_beats_for_patterns returning \n{all_beats}")
     return all_beats
 
+def get_all_events(button_list):
+    """Return (f1, f2, a1, a2, a3) states"""
 
-def handle_events(switch_list):
-    """Return (stop_button, fill_button) states"""
+    f1 = False
+    f2 = False
+    b1 = False
+    b2 = False
+    b3 = False
 
     # event will be None if nothing has happened.
-    event = switch_list.events.get()
-
-    stop_button = False
-    fill_button = False
+    event = button_list.events.get()
+    
     if event:
-        # print(f" ***** {event}")
+        # print(f" ***** button {event}")
+
         if event.pressed and event.key_number == 0:
-            stop_button = True
+            f1 = True
         if event.pressed and event.key_number == 1:
-            fill_button = True
-    return (stop_button, fill_button)
+            f2 = True
+
+        if event.pressed and event.key_number == 2:
+            b1 = True
+        if event.pressed and event.key_number == 3:
+            b2 = True
+        if event.pressed and event.key_number == 4:
+            b3 = True
+
+    return (f1, f2, b1, b2, b3)
 
 
 def get_free_mem():
@@ -263,28 +321,64 @@ def get_free_mem():
     return gc.mem_free()
 
 
-def test_dummy():
-    """I did not realize this! :-/ """
-    for x in range(10):
-        print(f"natural {x=}")
-        x = (x+1) % 7
-        print(f"  mod to {x=}")
+def load_setup_pads(setups, name):
+
+    this_setup = load_setup(setups, name)
+    if this_setup is None: # shouldn't happen
+        print(f"\n!!! Can't find setup {setup_name}")
+        sys.exit()
+
+    # Load the wavs for the pads
+    wavs_for_channels = load_pads(this_setup, name)
+    wav_table = [None] * len(wavs_for_channels)
+    for k, v in wavs_for_channels.items():
+        chan = v[0]
+        wav = v[1]
+        wav_table[chan] = wav
+    # print(f" * built wave table: {wav_table}")
+
+    return this_setup, wavs_for_channels, wav_table
+
+
+def load_beats_and_mixer(audio_out, all_setups, setup_name):
+    """Return this_setup, wavs_for_channels, wavetable, setup_beats, mixer """
+
+    print(f"Loading setup '{setup_name}'")
+
+    this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
+
+    # Load the beats for all patterns for this setup.
+    setup_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
+
+    # Allocate a mixer with just enough channels.
+    mixer = init_mixer(audio_out, len(wavs_for_channels))
+
+    return this_setup, wavs_for_channels, wavetable, setup_beats, mixer
+
+
+def bpm_from_tap_time(tap_time_seconds):
+    """Get BPM from the user-input 'tap time'."""
+    return int(15/tap_time_seconds)
+
+
+def bpm_to_sleep_time(bpm):
+    """Calculate the inter-tick (sixteenth note) delay time from the desired BPM."""
+    bps = bpm / 60
+    tick_delay = 1 / (bps * 4)
+    print(f" {bpm} BPM -> {bps} BPS -> {tick_delay} second tick-delay")
+    return tick_delay
 
 
 ###########################################################
-
 def main():
-
-    # ya learn something new every other day!
-    # test_dummy()
 
     print(f"Free mem at start: {get_free_mem()}")
     
-    switches = init_footswitch()
-
     # "Wait a little bit so USB can stabilize and not glitch audio"
     # TODO: needed? 
     time.sleep(2)
+
+    switches = init_all_switches()
 
     # TODO: Handle malformed data?
     all_setups = read_json(DATA_FILE_NAME)
@@ -293,44 +387,27 @@ def main():
         sys.exit()
     # print(f" ! setups: {all_setups}")
 
-    # for future use in UI?
-    setup_name_list = get_setup_names(all_setups)
 
-
-########## from here we are working with one 'setup' at a time.
+########## From here we are working with one 'setup' at a time.
 ########## in part (mainly?) because we only want to load one set of WAV files.
 
-    # TODO: select via UI
-    setup_name = setup_name_list[0] # first setup, for testing
-    this_setup = load_setup(all_setups, setup_name)
-    if this_setup is None: # shouldn't happen with GUI
-        print(f"\n!!! Can't find setup {setup_name}")
-        sys.exit()
 
-    # Load the wavs for the pads
-    wavs_for_channels = load_pads(this_setup, setup_name)
-    wav_table = [None] * len(wavs_for_channels)
-    for k, v in wavs_for_channels.items():
-        chan = v[0]
-        wav = v[1]
-        wav_table[chan] = wav
-    # print(f" * built wave table: {wav_table}")
+    audio_out = init_audio()
 
-    # Allocate a mixer with just enough channels.
-    # We only get the audio object so it won't get GCed. :-/
-    m1 = get_free_mem()
+    # Load all the initial data. Whew!
+    setup_index = 0
+    setup_names = get_setup_names(all_setups)
+    setup_name = setup_names[setup_index]
+    this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
-    audio, mixer = init_audio(len(wavs_for_channels))
+    bpm = 120
+    TICK_SLEEP_TIME = bpm_to_sleep_time(bpm)
+    TICK_SLEEP_TIME_MS = TICK_SLEEP_TIME * 1_000
 
-    # Load the beats for all patterns for this setup.
-    # FIXME: we could do this inside the DM object but that needs the WAV stuff. :-/
-    all_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
-
-
-    # 1/4 = 60 BPM
-    TICK_SLEEP_TIME = 1/4
-
-    last_tempo_tap = 0
+    if USE_FANCY_TIMING:
+        print(f" ** {USE_FANCY_TIMING=}: {TICK_SLEEP_TIME=} -> {TICK_SLEEP_TIME_MS=} -> {bpm} BPM")
+    else:
+        print(f" ** {USE_FANCY_TIMING=}: {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
 
 # left button is start/stop.
@@ -344,19 +421,41 @@ def main():
     advance_via_fill = False
     fill_downbeat = None
 
-    current_pattern_name = "main_a"
-    playing_beats = all_beats[current_pattern_name]
+    last_tempo_tap = 0
 
-    # import Display_text
+    current_pattern_name = DICT_KEYWORD_MAIN_A
+    plattern_beats = setup_beats[current_pattern_name]
+
+    try:
+        # Not sure why this is needed, but it seems to be:
+        displayio.release_displays()
+
+        # FIXME: RP2350/Pico
+        # i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
+        i2c = board.I2C()
+
+    except Exception as e:
+        print("No I2C bus?")
+        traceback.print_exception(e)
+        return # from main
+
+    # PICK ONE
+    # display = Display_OLED_64.Display_OLED(i2c, 0x3D)
     # display = Display_text.Display_text()
-    # display.show_pattern_name(current_pattern_name)
-    # display.show_beat_number(0)
-    # display.render()
+    display = Display_OLED.Display_OLED(i2c, 0x3C)
 
-    import Display_OLED
-    display = Display_OLED.Display_OLED()
 
-    display.set_text_1("spank the pank")
+    display.show_setup_name(setup_name)
+    display.show_pattern_name(current_pattern_name)
+
+    display.show_beat_number(f"{bpm} BPM")
+
+
+    DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
+    display_timeout_start = time.monotonic()
+    display_idle_flag = False
+    display_is_blanked = False
+
 
     print("\n**** READY ****")
 
@@ -366,11 +465,29 @@ def main():
         #
         if not is_playing:
 
-            stop_button, fill_button = handle_events(switches)
-            if stop_button:
-                is_playing = not is_playing
-                print(f" left -> {is_playing=}, {current_pattern_name=}")
+            display_idle_flag = True
 
+            stop_button, fill_button, b1, b2, b3 = get_all_events(switches)
+            if stop_button or fill_button or b1 or b2 or b3:
+                display_timeout_start = time.monotonic()
+                display_idle_flag = False
+                if display_is_blanked:
+                    print("Un-blanking display...")
+                    display.unblank()
+                    display_is_blanked = False
+            else:
+                if display_is_blanked:
+                    display.animate_idle()
+
+            if stop_button:
+                print("* STARTING")
+                is_playing = True
+                # print(f" left -> {is_playing=}, {current_pattern_name=}")
+                last_tempo_tap = 0
+
+            # User-input "tap time".
+            # TODO: This could average the last few taps, or just take the last one, for now.
+            #
             if fill_button:
                 if last_tempo_tap == 0:
                     last_tempo_tap = time.monotonic_ns()
@@ -379,23 +496,66 @@ def main():
                     delta = now - last_tempo_tap 
                     last_tempo_tap = now
                     TICK_SLEEP_TIME = delta / 1000000000
-                    TICK_SLEEP_TIME /= 2
+                    TICK_SLEEP_TIME /= 4
 
                     # sanity check - ridiculously slow
                     if TICK_SLEEP_TIME > 1:
                         TICK_SLEEP_TIME = 1
 
-                    print(f" ** tempo tap {TICK_SLEEP_TIME=}")
+                    bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
+                    if bpm < 15:
+                        bpm = 15
+                    elif bpm > 240:
+                        bpm = 240
 
-            # Idle handler
+                    print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
+
+                    display.show_beat_number(f"{bpm} BPM")
+
+            if b1 or b2 or b3:
+                setup_changed = False
+                # print(f"handle button {b1=} {b2=} {b3=}")
+                if b1:
+                    setup_index = (setup_index+1) % len(setup_names)
+                    setup_name = setup_names[setup_index]
+                    print(f"go to next setup: {setup_name}")
+                    setup_changed = True
+                elif b2:
+                    setup_index = (setup_index-1) % len(setup_names)
+                    setup_name = setup_names[setup_index]
+                    print(f"go to prev setup: {setup_name}")
+                    setup_changed = True
+                
+                if setup_changed:
+                    # Get all the data for the new setup.
+                    this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+                    plattern_beats = setup_beats[current_pattern_name]
+                    display.show_setup_name(setup_name)
+
+            # Idle handler.
             if not is_playing:
+
+                # TODO: how long to idle? if at all?
                 # print("  (idle)")
                 time.sleep(NOT_PLAYING_DELAY)
+
+                if display_idle_flag:
+                    if time.monotonic() > display_timeout_start + DISPLAY_TIMEOUT_SECONDS:
+                        if not display_is_blanked:
+                            print("Blanking display...")
+                            display.blank()
+                            display_is_blanked = True
+
                 continue
 
         while is_playing:
 
             for tick_number in range(TICKS_PER_MEASURE):
+
+                # if tick_number % 4 == 0:
+                #     display.show_extra_info(BEAT_NAMES[tick_number])
+
+                tick_start_time_ms = supervisor.ticks_ms()
 
                 # Special stuff on the downbeat, the start of a measure.
                 #
@@ -404,73 +564,81 @@ def main():
 
                     if advance_via_fill:
                         # print(" ** advance_via_fill!")
-                        if current_pattern_name == "fill_a":
-                            current_pattern_name = "main_b"
+                        if current_pattern_name == DICT_KEYWORD_FILL_A:
+                            current_pattern_name = DICT_KEYWORD_MAIN_B
                         else:
-                            current_pattern_name = "main_a"
-                        playing_beats = all_beats[current_pattern_name]
-                        print(f"  -> Advanced to pattern {current_pattern_name=}")
-        
+                            current_pattern_name = DICT_KEYWORD_MAIN_A
+                        plattern_beats = setup_beats[current_pattern_name]
+
+                        # print(f"  -> Advanced to pattern {current_pattern_name=}")
                         display.show_pattern_name(current_pattern_name)
-                        # display.render()
 
                     elif is_in_fill:
                         # no advance - go back to main pattern
-                        if current_pattern_name == "fill_a":
-                            current_pattern_name = "main_a"
+                        if current_pattern_name == DICT_KEYWORD_FILL_A:
+                            current_pattern_name = DICT_KEYWORD_MAIN_A
                         else:
-                            current_pattern_name = "main_b"
+                            current_pattern_name = DICT_KEYWORD_MAIN_B
 
-                        playing_beats = all_beats[current_pattern_name]
-                        print(f"  -> Reverted to pattern {current_pattern_name=}")
+                        plattern_beats = setup_beats[current_pattern_name]
+                        # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
                         display.show_pattern_name(current_pattern_name)
-                        # display.render()
 
-                    is_in_fill = False
                     advance_via_fill = False
+                    is_in_fill = False
 
-                stop_button, fill_button = handle_events(switches)
+                # FIXME: move this to top of loop?
+
+                stop_button, fill_button, b1, b2, b3 = get_all_events(switches)
+                if stop_button or fill_button or b1 or b2 or b3:
+                    display_timeout_start = time.monotonic()
+                    display_idle_flag = False
+                    if display_is_blanked:
+                        print("Un-blanking display...")
+                        display.unblank()
+                        display_is_blanked = False
+
                 if stop_button:
                     is_playing = not is_playing
-                    print(f" left -> {is_playing=}, {current_pattern_name=}")
+                    # print(f" left -> {is_playing=}, {current_pattern_name=}")
                     if not is_playing:
-                        print("  STOPPING")
-
-                        # right?
-                        current_pattern_name = "main_a"
-                        playing_beats = all_beats[current_pattern_name]
-
+                        print("* STOPPING")
+                        current_pattern_name = DICT_KEYWORD_MAIN_A
+                        plattern_beats = setup_beats[current_pattern_name]
                         break
 
                 if fill_button:
                     if is_in_fill:
                         advance_via_fill = True
-                        print(f"  ->  Will advance to next pattern...")
+                        # print(f"  ->  Will advance to next pattern...")
                     else:
                         is_in_fill = True
-                        if current_pattern_name == "main_a":
-                            current_pattern_name = "fill_a"
+                        if current_pattern_name == DICT_KEYWORD_MAIN_A:
+                            current_pattern_name = DICT_KEYWORD_FILL_A
                         else:
-                            current_pattern_name = "fill_b"
-                        playing_beats = all_beats[current_pattern_name]
-                        print(f"  -> Switched to pattern {current_pattern_name=}")
-
-                        fill_downbeat = playing_beats[0]
-                        print(f"  Saving fill downbeat {fill_downbeat=}")
+                            current_pattern_name = DICT_KEYWORD_FILL_B
+                        plattern_beats = setup_beats[current_pattern_name]
+                        fill_downbeat = plattern_beats[0]
+                        # print(f"  -> Switched to pattern {current_pattern_name=}")
+                        # print(f"     Saving fill downbeat {fill_downbeat=}")
 
 
                 # Play the current tick
                 #
                 if tick_number == 0 and fill_downbeat is not None:
                     hit_list = fill_downbeat
+                    # print(f"  Playing fill downbeat {hit_list=}")
                     fill_downbeat = None
-                    print(f"  Playing fill downbeat {hit_list=}")
                 else:
-                    hit_list = playing_beats[tick_number]
+                    hit_list = plattern_beats[tick_number]
                 
                 # print(f"  Hit list: {hit_list}")
                 if len(hit_list) > 0:
+
+                    # TODO: I don't know that we can update the display this often without a performace hit.
+                    # display.show_beat_number(tick_number)
+
                     # print(f" {current_pattern_name} tick #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
 
                     for channel, volume in hit_list:
@@ -481,24 +649,39 @@ def main():
                             # print(f"     playing {track_index=} @ {volume=} ")
                             # print(f" - {mixer.voice}")
 
-                            # we don't seem to need to stop old voices - just re-start them!
+                            # We don't seem to need to stop old voices - just re-start them!
                             #
-                            # if mixer.voice[track_index].playing:
+                            # if mixer.voice[channel].playing:
                             #     # print("stopping voice")
-                            #     mixer.stop_voice(track_index)
-                            #     mixer.voice[track_index].stop()
+                            #     # FIXME: which? are these the same thing?
+                            #     mixer.stop_voice(channel)
+                            #     # mixer.voice[channel].stop()
 
                             mixer.voice[channel].level = volume/9
-                            wav = wav_table[channel]
-                            mixer.voice[channel].play(wav)
+                            wav = wavetable[channel]
+                            mixer.voice[channel].play(wav, loop=False)
 
-                # FIXME: instead of just sleeping for the full time,
-                # incorporate this into a loop, above, around the button-check stuff.
-                #
-                time.sleep(TICK_SLEEP_TIME)
+                # This doesn't seem necessary if we make the Mixer buffers small,
+                # which seems to work fine. This may change in the future, depending
+                # on our display, other peripherals, etcc.
+
+                if USE_FANCY_TIMING:
+                    tick_delta_ms = supervisor.ticks_ms() - tick_start_time_ms
+                    sleep_ms = TICK_SLEEP_TIME_MS - tick_delta_ms
+                    print(f" {tick_start_time_ms=} {tick_delta_ms=} {sleep_ms=}")
+                    if sleep_ms > 0:
+                        time.sleep(sleep_ms / 1_000)
+                else:
+                    time.sleep(TICK_SLEEP_TIME)
 
             # end of tick loop
 
 
 # Let's do it!
+
+# for performance improvement; otherwise we get audio glitches when auto-reloads.
+import supervisor
+supervisor.runtime.autoreload = False
+print(f"**** {supervisor.runtime.autoreload=}\n")
+
 main()
