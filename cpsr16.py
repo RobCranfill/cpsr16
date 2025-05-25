@@ -20,7 +20,7 @@ import displayio
 import keypad
 
 # our libs
-# Does it hurt anything to just import these all? For now, pick one:
+# Does it hurt anything to just import these all? For now, pick just one:
 import Display_OLED_64
 # import Display_OLED
 # import Display_text
@@ -29,8 +29,8 @@ import Display_OLED_64
 ############# Hardware pin assignments
 # Pick one:
 # TODO: Automate this - by checking hardware?
-from cpsr_hardware_pico import *
-# from cpsr_hardware_2350 import *
+import cpsr_hardware_pico as HARDWARE_CONFIG
+# import cpsr_hardware_2350 import cpsr_hardware_pico as HARDWARE_CONFIG
 
 
 # TODO: make this variable???
@@ -85,7 +85,9 @@ def init_audio():
 
     # TODO: catch exceptions
     audio_device = audiobusio.I2SOut(
-        bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
+        bit_clock =     HARDWARE_CONFIG.AUDIO_OUT_I2S_BIT,
+        word_select =   HARDWARE_CONFIG.AUDIO_OUT_I2S_WORD, 
+        data =          HARDWARE_CONFIG.AUDIO_OUT_I2S_DATA)
 
     return audio_device
 
@@ -104,7 +106,9 @@ def init_mixer(audio_out, n_voices: int):
 
 def init_all_switches():
     """return (footswitch 1, footswitch 2, button 1, button 2, button 3)"""
-    return keypad.Keys((SWITCH_1, SWITCH_2, BUTTON_A, BUTTON_B, BUTTON_C), value_when_pressed=False, pull=True)
+    return keypad.Keys((HARDWARE_CONFIG.SWITCH_1, HARDWARE_CONFIG.SWITCH_2, 
+                        HARDWARE_CONFIG.BUTTON_A, HARDWARE_CONFIG.BUTTON_B, HARDWARE_CONFIG.BUTTON_C), 
+                       value_when_pressed=False, pull=True)
 
 
 def load_setup(setups, setup_name):
@@ -396,7 +400,7 @@ def main():
         displayio.release_displays()
 
         # FIXME: Pico .vs. RP2350
-        i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
+        i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
         # i2c = board.I2C()
 
     except Exception as e:

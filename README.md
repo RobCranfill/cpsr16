@@ -40,6 +40,7 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
 
 
 ## TO DO
+  * Longer measures?
   * Get rid of unused code - including Display superclass?
   * Implement hardware config file?
   * "Ready" beep?
@@ -59,7 +60,11 @@ sox {original_file}.mp3 -b 16 -c 1 -r 22050 {output_file}.wav
 </code>
 
 
-# Notes from SR-16 manual
+## Reference
+### Patterns
+ * See https://www.synthmania.com/sr-16.htm
+
+### Notes from SR-16 manual
 *This is not actually what we do, but it was the inspiration.*
 
 There are 50 of each type of Pattern, numbered 00-49. However, each numbered Pattern
