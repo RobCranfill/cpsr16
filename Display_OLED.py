@@ -3,6 +3,7 @@
 
 import board
 import busio
+import random
 import time
 
 import displayio
@@ -12,16 +13,16 @@ from adafruit_display_text import label
 import terminalio
 
 
-
 WIDTH  = 128
 HEIGHT =  32 
-BORDER =   5
 
 BLACK = 0x00_00_00
 WHITE = 0xFF_FF_FF
 
+ANIMATION_INTERVAL = 1.0 # seconds
 
-class Display_OLED:
+
+class Display:
 
     def __init__(self, i2c, oled_i2c_address):
 
@@ -59,6 +60,8 @@ class Display_OLED:
         splash.append(text_area)
         self._text_area_3 = text_area
 
+        self.__last_anim = time.monotonic()
+
         # print(".__init__() OK!")
 
     def show_setup_name(self, name):
@@ -67,10 +70,38 @@ class Display_OLED:
     def show_pattern_name(self, name):
         self.__set_text_2(f"Patt: {name}")
     
-    # too much actvitiy for display?
-    def show_beat_number(self, n):
-        self.__set_text_3(f"Beat: {n}")
+    # # too much actvitiy for display?
+    # def show_beat_number(self, n):
+    #     self.__set_text_3(f"Beat: {n}")
 
+    def blank(self):
+        self.__hold_text_1 = self._text_area_1.text
+        self.__hold_text_2 = self._text_area_2.text
+        self.__hold_text_3 = self._text_area_3.text
+        self.__hold_text_4 = self._text_area_4.text
+
+        self.__set_text_1("")
+        self.__set_text_2("")
+        self.__set_text_3("")
+        self.__set_text_4("")
+
+    def unblank(self):
+        self.__set_text_1(self.__hold_text_1)
+        self.__set_text_2(self.__hold_text_2)
+        self.__set_text_3(self.__hold_text_3)
+        self.__set_text_4(self.__hold_text_4)
+
+    def animate_idle(self):
+        if time.monotonic() - ANIMATION_INTERVAL > self.__last_anim:
+            c = chr(random.randrange(97, 97 + 26))
+            p = random.randint(0, 20)
+            l = [' '] * 21
+            l[p] = c
+            self.__set_text_4("".join(l))
+            self.__last_anim = time.monotonic()
+
+
+## Private methods
 
     def __set_text_1(self, text):
         self._text_area_1.text = text
@@ -81,4 +112,6 @@ class Display_OLED:
     def __set_text_3(self, text):
         self._text_area_3.text = text
 
+    def __set_text_4(self, text):
+        self._text_area_4.text = text
 

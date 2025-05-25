@@ -7,8 +7,6 @@
 # stdlibs
 import gc
 import json
-import os
-import random
 import sys
 import time
 import traceback
@@ -17,15 +15,22 @@ import traceback
 import audiobusio
 import audiocore
 import audiomixer
-import board
 import busio
 import displayio
 import keypad
 
 # our libs
-# import Display_OLED_64
-import Display_OLED
+# Does it hurt anything to just import these all? For now, pick one:
+import Display_OLED_64
+# import Display_OLED
 # import Display_text
+
+
+############# Hardware pin assignments
+# Pick one:
+# TODO: Automate this - by checking hardware?
+from cpsr_hardware_pico import *
+# from cpsr_hardware_2350 import *
 
 
 # TODO: make this variable???
@@ -40,46 +45,6 @@ DATA_FILE_NAME = "rhythms-4-sr16.dict"
 
 # idle loop hander delay - needed?
 NOT_PLAYING_DELAY = 0.01
-
-############# Hardware pin assignments
-
-# TODO: put pin assignments in a hardware config file?
-# TODO: along with other things like sample rates and channel counts?
-
-# For Pico
-# BOARD_SCL = board.GP1
-# BOARD_SDA = board.GP0
-
-# for I2S audio with external I2S DAC board
-
-# hardware-dependent section -------------------------------------------------
-# for my RP2350 testbed -------------------------------------------------
-AUDIO_OUT_I2S_BIT  = board.D9
-AUDIO_OUT_I2S_WORD = board.D10
-AUDIO_OUT_I2S_DATA = board.D11
-
-SWITCH_1 = board.D5 # left-hand (haha) footswitch: start/stop, mostly
-SWITCH_2 = board.D6 # right-hand footswitch: fill, tap
-
-BUTTON_A = board.D12 # middle = up
-# not yet:
-BUTTON_B = board.D13 # left = down
-BUTTON_C = board.D25 # does nothing yet
-
-# for RP Pico -------------------------------------------------
-# AUDIO_OUT_I2S_BIT  = board.GP8
-# AUDIO_OUT_I2S_WORD = board.GP9
-# AUDIO_OUT_I2S_DATA = board.GP10
-
-# SWITCH_1 = board.GP28 # left-hand (haha) footswitch: start/stop, mostly
-# SWITCH_2 = board.GP27 # right-hand footswitch: fill, tap
-
-# BUTTON_A = board.GP17 # middle = up
-# BUTTON_B = board.GP16 # left = down
-# BUTTON_C = board.GP18 # does nothing yet
-
-# end hardware-dependent section -------------------------------------------------
-
 
 # Mixer buffer size, per voice.
 # What is the best value? Esp w/r/t "fancy timing"?
@@ -121,7 +86,7 @@ def init_audio():
     # TODO: catch exceptions
     audio_device = audiobusio.I2SOut(
         bit_clock=AUDIO_OUT_I2S_BIT, word_select=AUDIO_OUT_I2S_WORD, data=AUDIO_OUT_I2S_DATA)
-    
+
     return audio_device
 
 
@@ -297,7 +262,7 @@ def get_all_events(button_list):
 
     # event will be None if nothing has happened.
     event = button_list.events.get()
-    
+
     if event:
         # print(f" ***** button {event}")
 
@@ -325,7 +290,7 @@ def load_setup_pads(setups, name):
 
     this_setup = load_setup(setups, name)
     if this_setup is None: # shouldn't happen
-        print(f"\n!!! Can't find setup {setup_name}")
+        print(f"\n!!! Can't find setup {name}")
         sys.exit()
 
     # Load the wavs for the pads
@@ -373,9 +338,9 @@ def bpm_to_sleep_time(bpm):
 def main():
 
     print(f"Free mem at start: {get_free_mem()}")
-    
+
     # "Wait a little bit so USB can stabilize and not glitch audio"
-    # TODO: needed? 
+    # TODO: needed?
     time.sleep(2)
 
     switches = init_all_switches()
@@ -430,9 +395,9 @@ def main():
         # Not sure why this is needed, but it seems to be:
         displayio.release_displays()
 
-        # FIXME: RP2350/Pico
-        # i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
-        i2c = board.I2C()
+        # FIXME: Pico .vs. RP2350
+        i2c = busio.I2C(scl=BOARD_SCL, sda=BOARD_SDA)
+        # i2c = board.I2C()
 
     except Exception as e:
         print("No I2C bus?")
@@ -440,15 +405,14 @@ def main():
         return # from main
 
     # PICK ONE
-    # display = Display_OLED_64.Display_OLED(i2c, 0x3D)
-    # display = Display_text.Display_text()
-    display = Display_OLED.Display_OLED(i2c, 0x3C)
+    display = Display_OLED_64.Display(i2c, 0x3D)
+    # display = Display_text.Display()
+    # display = Display_OLED.Display(i2c, 0x3C)
 
 
     display.show_setup_name(setup_name)
     display.show_pattern_name(current_pattern_name)
-
-    display.show_beat_number(f"{bpm} BPM")
+    display.show_extra_info(f"{bpm} BPM")
 
 
     DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
@@ -493,7 +457,7 @@ def main():
                     last_tempo_tap = time.monotonic_ns()
                 else:
                     now = time.monotonic_ns()
-                    delta = now - last_tempo_tap 
+                    delta = now - last_tempo_tap
                     last_tempo_tap = now
                     TICK_SLEEP_TIME = delta / 1000000000
                     TICK_SLEEP_TIME /= 4
@@ -510,7 +474,7 @@ def main():
 
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
-                    display.show_beat_number(f"{bpm} BPM")
+                    display.show_extra_info(f"{bpm} BPM")
 
             if b1 or b2 or b3:
                 setup_changed = False
@@ -525,7 +489,7 @@ def main():
                     setup_name = setup_names[setup_index]
                     print(f"go to prev setup: {setup_name}")
                     setup_changed = True
-                
+
                 if setup_changed:
                     # Get all the data for the new setup.
                     this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
@@ -632,7 +596,7 @@ def main():
                     fill_downbeat = None
                 else:
                     hit_list = plattern_beats[tick_number]
-                
+
                 # print(f"  Hit list: {hit_list}")
                 if len(hit_list) > 0:
 

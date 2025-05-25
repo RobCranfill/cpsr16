@@ -22,7 +22,7 @@ WHITE = 0xFF_FF_FF
 ANIMATION_INTERVAL = 1.0 # seconds
 
 
-class Display_OLED:
+class Display:
     """For Adafruit 128x64 I2C OLED, product ID 326."""
 
     def __init__(self, i2c, oled_i2c_address):
