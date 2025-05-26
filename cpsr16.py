@@ -94,7 +94,7 @@ def init_audio():
 
 def init_mixer(audio_out, n_voices: int):
 
-    # print(f"Creating mixer with {n_voices} voices....")
+    print(f"Creating mixer with {n_voices} voices....")
     mixer = audiomixer.Mixer(voice_count=n_voices,
                              sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
                              bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,

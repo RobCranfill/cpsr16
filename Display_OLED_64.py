@@ -108,7 +108,14 @@ class Display:
 
     def animate_idle(self):
         if time.monotonic() - ANIMATION_INTERVAL > self.__last_anim:
-            c = chr(random.randrange(97, 97 + 26))
+
+            # c = chr(random.randrange(97, 97 + 26))
+            c = chr(random.randrange(33, 126))
+
+            ## more printable chars? not for OLED maybe
+            # l = list(range(33,127)) + list(range(161,255))
+            # c = chr(random.choice(l))
+
             p = random.randint(0, 20)
             l = [' '] * 21
             l[p] = c
