@@ -15,13 +15,13 @@ import traceback
 import audiobusio
 import audiocore
 import audiomixer
+import board
 import busio
 import displayio
 import keypad
 
 # our libs
 # Does it hurt anything to just import these all? For now, pick just one:
-# import Display_OLED_64
 import Display_OLED
 # import Display_text
 
@@ -29,8 +29,8 @@ import Display_OLED
 ############# Hardware pin assignments
 # Pick one:
 # TODO: Automate this - by checking hardware?
-import cpsr_hardware_pico as HARDWARE_CONFIG
-# import cpsr_hardware_2350 import cpsr_hardware_pico as HARDWARE_CONFIG
+# import cpsr_hardware_pico as HARDWARE_CONFIG
+import cpsr_hardware_2350 as HARDWARE_CONFIG
 
 
 # TODO: make this variable???
@@ -400,8 +400,8 @@ def main():
         displayio.release_displays()
 
         # FIXME: Pico .vs. RP2350
-        i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
-        # i2c = board.I2C()
+        # i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
+        i2c = board.I2C()
 
     except Exception as e:
         print("No I2C bus?")
@@ -410,10 +410,8 @@ def main():
 
     # PICK ONE
     
-    display = Display_OLED.Display_64(i2c, 0x3D)
-
-    # display = Display_OLED_64.Display(i2c, 0x3D)
-    # display = Display_OLED.Display(i2c, 0x3C)
+    display = Display_OLED.Display_32(i2c, 0x3C)
+    # display = Display_OLED_64.Display_64(i2c, 0x3D)
     # display = Display_text.Display()
 
 

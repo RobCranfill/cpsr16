@@ -26,6 +26,8 @@ class _Display:
 
     def __init__(self, i2c, oled_i2c_address, display_height, rows):
 
+        print(f"{__name__}.__init__: {display_height=} x {rows=}")
+
         self._display_height = display_height
         self._display_rows = rows
 
@@ -45,7 +47,7 @@ class _Display:
         bg_sprite = displayio.TileGrid(color_bitmap, pixel_shader=color_palette, x=0, y=0)
         splash.append(bg_sprite)
 
-
+        # Y-coordinates for the labels. This seems to be the most straightforward way.
         go_big = (self._display_rows > 3)
         if go_big:
             ys = [8, 30, 47, 58]
@@ -53,12 +55,14 @@ class _Display:
             ys = [4, 15, 26]
 
         y = ys[0]
-        text_area = label.Label(terminalio.FONT, text="DM Ready!", scale=2, color=WHITE, x=0, y=y)
+        top_scale = 2 if rows == 4 else 1
+    
+        text_area = label.Label(terminalio.FONT, text="DM Ready!", scale=top_scale, color=WHITE, x=0, y=y)
         splash.append(text_area)
         self._text_area_1 = text_area
 
         y = ys[1]
-        text_area = label.Label(terminalio.FONT, text="", scale=2, color=WHITE, x=0, y=y)
+        text_area = label.Label(terminalio.FONT, text="", scale=top_scale, color=WHITE, x=0, y=y)
         splash.append(text_area)
         self._text_area_2 = text_area
 
@@ -72,6 +76,11 @@ class _Display:
             y = ys[3]
             text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=y)
             splash.append(text_area)
+            self._text_area_4 = text_area
+        else:
+            # this is bogus
+            text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=100)
+            # splash.append(text_area)
             self._text_area_4 = text_area
 
         self.__last_anim = time.monotonic()
@@ -89,10 +98,18 @@ class _Display:
     #     self.__set_text_3(f"Beat: {n}")
 
     def show_extra_info(self, whatever):
-        self.__set_text_4(whatever)
+
+        if self._display_rows == 4:
+            self.__set_text_4(whatever)
+        else:
+            self.__set_text_3(whatever)
+
 
     def blank(self):
         """Screensaver. Hold the old text for restoration."""
+
+        print("Blanking screen")
+
         self.__hold_text_1 = self._text_area_1.text
         self.__hold_text_2 = self._text_area_2.text
         self.__hold_text_3 = self._text_area_3.text
@@ -104,6 +121,7 @@ class _Display:
         self.__set_text_4("")
 
     def unblank(self):
+        print("Un-blanking screen")
         self.__set_text_1(self.__hold_text_1)
         self.__set_text_2(self.__hold_text_2)
         self.__set_text_3(self.__hold_text_3)
