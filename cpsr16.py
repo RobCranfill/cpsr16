@@ -143,7 +143,7 @@ def load_pads(setup, setup_name):
         wavs[pad_name] = (channel, wav)
         channel += 1
 
-    print(f"  * {len(wavs)} wav files loaded ok!")
+    print(f"  * {len(wavs)} wav files loaded ok")
     # print(f"  * {wavs=}")
 
     m2 = get_free_mem()
@@ -409,22 +409,18 @@ def main():
         return # from main
 
     # PICK ONE
-    
     display = Display_OLED.Display_32(i2c, 0x3C)
     # display = Display_OLED_64.Display_64(i2c, 0x3D)
     # display = Display_text.Display()
 
-
-    display.show_setup_name(setup_name)
-    display.show_pattern_name(current_pattern_name)
-    display.show_extra_info(f"{bpm} BPM")
-
+    display.set_line_1(setup_name)
+    display.set_line_2(current_pattern_name)
+    display.set_line_3(f"{bpm} BPM")
 
     DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
     display_timeout_start = time.monotonic()
     display_idle_flag = False
     display_is_blanked = False
-
 
     print("\n**** READY ****")
 
@@ -479,7 +475,7 @@ def main():
 
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
-                    display.show_extra_info(f"{bpm} BPM")
+                    display.set_line_3(f"{bpm} BPM")
 
             if b1 or b2 or b3:
                 setup_changed = False
@@ -499,7 +495,7 @@ def main():
                     # Get all the data for the new setup.
                     this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
                     plattern_beats = setup_beats[current_pattern_name]
-                    display.show_setup_name(setup_name)
+                    display.set_line_1(setup_name)
 
             # Idle handler.
             if not is_playing:
@@ -522,7 +518,7 @@ def main():
             for tick_number in range(TICKS_PER_MEASURE):
 
                 # if tick_number % 4 == 0:
-                #     display.show_extra_info(BEAT_NAMES[tick_number])
+                #     display.set_line_3(f"{BEAT_NAMES[tick_number]}")
 
                 tick_start_time_ms = supervisor.ticks_ms()
 
@@ -532,7 +528,7 @@ def main():
                     # print(f"Tick zero - {advance_via_fill=}")
 
                     if advance_via_fill:
-                        # print(" ** advance_via_fill!")
+                        # print(" ** advance_via_fill")
                         if current_pattern_name == DICT_KEYWORD_FILL_A:
                             current_pattern_name = DICT_KEYWORD_MAIN_B
                         else:
@@ -540,7 +536,7 @@ def main():
                         plattern_beats = setup_beats[current_pattern_name]
 
                         # print(f"  -> Advanced to pattern {current_pattern_name=}")
-                        display.show_pattern_name(current_pattern_name)
+                        display.set_line_1(current_pattern_name)
 
                     elif is_in_fill:
                         # no advance - go back to main pattern
@@ -548,11 +544,10 @@ def main():
                             current_pattern_name = DICT_KEYWORD_MAIN_A
                         else:
                             current_pattern_name = DICT_KEYWORD_MAIN_B
-
                         plattern_beats = setup_beats[current_pattern_name]
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
-                        display.show_pattern_name(current_pattern_name)
+                        display.set_line_1(current_pattern_name)
 
                     advance_via_fill = False
                     is_in_fill = False
@@ -606,7 +601,7 @@ def main():
                 if len(hit_list) > 0:
 
                     # TODO: I don't know that we can update the display this often without a performace hit.
-                    # display.show_beat_number(tick_number)
+                    # display.set_line_3(f"{tick_number}")
 
                     # print(f" {current_pattern_name} tick #{tick_number}: '{BEAT_NAMES[tick_number]}': {hit_list=}")
 
