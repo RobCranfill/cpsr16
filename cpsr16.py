@@ -21,8 +21,8 @@ import keypad
 
 # our libs
 # Does it hurt anything to just import these all? For now, pick just one:
-import Display_OLED_64
-# import Display_OLED
+# import Display_OLED_64
+import Display_OLED
 # import Display_text
 
 
@@ -409,9 +409,12 @@ def main():
         return # from main
 
     # PICK ONE
-    display = Display_OLED_64.Display(i2c, 0x3D)
-    # display = Display_text.Display()
+    
+    display = Display_OLED.Display_64(i2c, 0x3D)
+
+    # display = Display_OLED_64.Display(i2c, 0x3D)
     # display = Display_OLED.Display(i2c, 0x3C)
+    # display = Display_text.Display()
 
 
     display.show_setup_name(setup_name)

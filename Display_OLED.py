@@ -14,7 +14,7 @@ import terminalio
 
 
 WIDTH  = 128
-HEIGHT =  32 
+# HEIGHT =  32
 
 BLACK = 0x00_00_00
 WHITE = 0xFF_FF_FF
@@ -22,59 +22,77 @@ WHITE = 0xFF_FF_FF
 ANIMATION_INTERVAL = 1.0 # seconds
 
 
-class Display:
+class _Display:
 
-    def __init__(self, i2c, oled_i2c_address):
+    def __init__(self, i2c, oled_i2c_address, display_height, rows):
+
+        self._display_height = display_height
+        self._display_rows = rows
 
         displayio.release_displays()
 
         display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=oled_i2c_address)
-        display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=32)
+        display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=self._display_height)
 
         # Make the display context
         splash = displayio.Group()
         display.root_group = splash
 
         # black background
-        color_bitmap = displayio.Bitmap(WIDTH, HEIGHT, 1)
+        color_bitmap = displayio.Bitmap(WIDTH, self._display_height, 1)
         color_palette = displayio.Palette(1)
         color_palette[0] = BLACK
         bg_sprite = displayio.TileGrid(color_bitmap, pixel_shader=color_palette, x=0, y=0)
         splash.append(bg_sprite)
-        
 
-        y_height = 11
 
-        y = 4
-        text_area = label.Label(terminalio.FONT, text="DM Ready!", color=WHITE, x=2, y=y)
+        go_big = (self._display_rows > 3)
+        if go_big:
+            ys = [8, 30, 47, 58]
+        else:
+            ys = [4, 15, 26]
+
+        y = ys[0]
+        text_area = label.Label(terminalio.FONT, text="DM Ready!", scale=2, color=WHITE, x=0, y=y)
         splash.append(text_area)
         self._text_area_1 = text_area
 
-        y += y_height
-        text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=2, y=y)
+        y = ys[1]
+        text_area = label.Label(terminalio.FONT, text="", scale=2, color=WHITE, x=0, y=y)
         splash.append(text_area)
         self._text_area_2 = text_area
 
-        y += y_height
+        y = ys[2]
         text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=2, y=y)
         splash.append(text_area)
         self._text_area_3 = text_area
+
+        # Only create 4th row if there's room
+        if rows > 3:
+            y = ys[3]
+            text_area = label.Label(terminalio.FONT, text="", color=WHITE, x=0, y=y)
+            splash.append(text_area)
+            self._text_area_4 = text_area
 
         self.__last_anim = time.monotonic()
 
         # print(".__init__() OK!")
 
-    def show_setup_name(self, name):
-        self.__set_text_1(f"Setup: {name}")
+    def show_setup_name(self, text):
+        self.__set_text_1(text)
 
-    def show_pattern_name(self, name):
-        self.__set_text_2(f"Patt: {name}")
+    def show_pattern_name(self, text):
+        self.__set_text_2(text)
     
     # # too much actvitiy for display?
     # def show_beat_number(self, n):
     #     self.__set_text_3(f"Beat: {n}")
 
+    def show_extra_info(self, whatever):
+        self.__set_text_4(whatever)
+
     def blank(self):
+        """Screensaver. Hold the old text for restoration."""
         self.__hold_text_1 = self._text_area_1.text
         self.__hold_text_2 = self._text_area_2.text
         self.__hold_text_3 = self._text_area_3.text
@@ -97,7 +115,13 @@ class Display:
             p = random.randint(0, 20)
             l = [' '] * 21
             l[p] = c
-            self.__set_text_4("".join(l))
+
+            # FIXME: inelegant?
+            if self._display_rows == 3:
+                self.__set_text_3("".join(l))
+            else:
+                self.__set_text_4("".join(l))
+
             self.__last_anim = time.monotonic()
 
 
@@ -114,4 +138,16 @@ class Display:
 
     def __set_text_4(self, text):
         self._text_area_4.text = text
+
+
+# Public sub-classes
+
+class Display_32(_Display):
+    def __init__(self, i2c, oled_i2c_address):
+        super().__init__(i2c, oled_i2c_address, 32, 3)
+
+
+class Display_64(_Display):
+    def __init__(self, i2c, oled_i2c_address):
+        super().__init__(i2c, oled_i2c_address, 64, 4)
 
