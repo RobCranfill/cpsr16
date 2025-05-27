@@ -7,33 +7,21 @@ class Display_text():
     '''Being a simple stdout-based display'''
 
     def __init__(self):
-        self.__setup = ""
-        self.__pattern = ""
+        self._line_1 = ""
+        self._line_2 = ""
+        self._line_3 = ""
 
-    def render(self):
+    def set_line_1(self, text):
+        self._line_1 = text
+        self._render()
 
-        gc.collect()
-        mem = gc.mem_free()
-
-        print(f"+--------------------------------------+")
-        print(f"|  {self.__setup:20} ")
-        print(f"|  {self.__pattern:20} ")
-        print(f"|")
-        print(f"|  {mem:9} ")
-        print(f"+--------------------------------------+")
+    def set_line_2(self, text):
+        self._line_2 = text
+        self._render()
     
-    def show_setup_name(self, setup):
-        self.__setup = setup
-        self.render()
-        
-    def show_pattern_name(self, pattern):
-        self.__pattern = pattern
-        self.render()
-
-# just eat it
-    def show_beat_number(self, beat):
-        # self.__beat = beat
-        self.render()
+    def set_line_3(self, text):
+        self._line_3 = text
+        self._render()
 
     def blank(self):
         pass
@@ -42,3 +30,15 @@ class Display_text():
         pass
 
 
+    def _render(self):
+
+        gc.collect()
+        mem = gc.mem_free()
+
+        print(f"+--------------------------------------+")
+        print(f"|  {self._line_1:20} ")
+        print(f"|  {self._line_2:20} ")
+        print(f"|  {self._line_3:20} ")
+        print(f"|")
+        print(f"|  {mem:9} ")
+        print(f"+--------------------------------------+")

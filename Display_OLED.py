@@ -1,5 +1,5 @@
-"""Display using Adafruit 128x32 I2C OLED.
-   Display area is 3 rows of 20 characters."""
+"""Display using Adafruit 128x32 or 128x64 I2C OLED.
+   Display area is 3 rows of 21 characters."""
 
 import board
 import busio
@@ -14,7 +14,6 @@ import terminalio
 
 
 WIDTH  = 128
-# HEIGHT =  32
 
 BLACK = 0x00_00_00
 WHITE = 0xFF_FF_FF
@@ -24,9 +23,9 @@ ANIMATION_INTERVAL = 1.0 # seconds
 
 class _Display:
 
-    def __init__(self, i2c, oled_i2c_address, display_height, rows):
+    def __init__(self, i2c, oled_i2c_address, display_height):
 
-        print(f"{__name__}.__init__: {display_height=} x {rows=}")
+        print(f"{__name__}.__init__: {display_height=}")
 
         # Do this or Bad Things happen.
         displayio.release_displays()
@@ -86,8 +85,7 @@ class _Display:
     def blank(self):
         """Screensaver. Hold the old text for restoration."""
 
-        print("Blanking screen")
-
+        # print("Blanking screen")
         self.__hold_text_1 = self._text_area_1.text
         self.__hold_text_2 = self._text_area_2.text
         self.__hold_text_3 = self._text_area_3.text
@@ -97,13 +95,14 @@ class _Display:
         self.__set_text_3("")
 
     def unblank(self):
-        print("Un-blanking screen")
+        # print("Un-blanking screen")
         self.__set_text_1(self.__hold_text_1)
         self.__set_text_2(self.__hold_text_2)
         self.__set_text_3(self.__hold_text_3)
 
     def animate_idle(self):
         if time.monotonic() - ANIMATION_INTERVAL > self.__last_anim:
+
             c = chr(random.randrange(97, 97 + 26))
             p = random.randint(0, 20)
             l = [' '] * 21
@@ -130,10 +129,10 @@ class _Display:
 
 class Display_32(_Display):
     def __init__(self, i2c, oled_i2c_address):
-        super().__init__(i2c, oled_i2c_address, 32, 3)
+        super().__init__(i2c, oled_i2c_address, 32)
 
 
 class Display_64(_Display):
     def __init__(self, i2c, oled_i2c_address):
-        super().__init__(i2c, oled_i2c_address, 64, 4)
+        super().__init__(i2c, oled_i2c_address, 64)
 

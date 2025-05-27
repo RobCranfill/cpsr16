@@ -29,8 +29,8 @@ import Display_OLED
 ############# Hardware pin assignments
 # Pick one:
 # TODO: Automate this - by checking hardware?
-# import cpsr_hardware_pico as HARDWARE_CONFIG
-import cpsr_hardware_2350 as HARDWARE_CONFIG
+import cpsr_hardware_pico as HARDWARE_CONFIG
+# import cpsr_hardware_2350 as HARDWARE_CONFIG
 
 
 # TODO: make this variable???
@@ -349,6 +349,36 @@ def main():
 
     switches = init_all_switches()
 
+    ##### Initialize the I2S (not I2C) audio hardware.
+    audio_out = init_audio()
+
+    ##### Initialize the I2C hardware.
+    try:
+        # Not sure why this is needed, but it seems to be:
+        displayio.release_displays()
+
+        # FIXME: Pico .vs. RP2350
+        i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
+        # i2c = board.I2C()
+    except Exception as e:
+        print("No I2C bus?")
+        traceback.print_exception(e)
+        return # from main
+
+    ##### Initialize the I2C display.
+    # PICK ONE
+    # display = Display_OLED.Display_32(i2c, 0x3C)
+    display = Display_OLED.Display_64(i2c, 0x3D)
+
+    # Or for no I2C display attached,
+    # display = Display_text.Display()
+
+    DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
+    display_timeout_start = time.monotonic()
+    display_idle_flag = False
+    display_is_blanked = False
+
+    # Load the data file.
     # TODO: Handle malformed data?
     all_setups = read_json(DATA_FILE_NAME)
     if len(all_setups) == 0:
@@ -361,12 +391,11 @@ def main():
 ########## in part (mainly?) because we only want to load one set of WAV files.
 
 
-    audio_out = init_audio()
-
     # Load all the initial data. Whew!
     setup_index = 0
     setup_names = get_setup_names(all_setups)
     setup_name = setup_names[setup_index]
+
     this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
     bpm = 120
@@ -379,12 +408,6 @@ def main():
         print(f" ** {USE_FANCY_TIMING=}: {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
 
-# left button is start/stop.
-# if we are stopped, right button is tempo tap
-# if we are not stopped,
-#   if we are not in a fill, right button starts a fill.
-#   if we are in a fill, right button advances to other pattern at next tick 0.
-
     is_playing = False
     is_in_fill = False
     advance_via_fill = False
@@ -393,34 +416,19 @@ def main():
     last_tempo_tap = 0
 
     current_pattern_name = DICT_KEYWORD_MAIN_A
+
+    # 'plattern_beats' is the main data structure we are using as we play a rhythm.
+    # It is a list of size TICKS_PER_MEASURE, with a list of each voice to be played that tick.
+    # That is, a list of (channel, volume) pairs.
+    #
     plattern_beats = setup_beats[current_pattern_name]
+    print(f"{plattern_beats=}")
 
-    try:
-        # Not sure why this is needed, but it seems to be:
-        displayio.release_displays()
-
-        # FIXME: Pico .vs. RP2350
-        # i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
-        i2c = board.I2C()
-
-    except Exception as e:
-        print("No I2C bus?")
-        traceback.print_exception(e)
-        return # from main
-
-    # PICK ONE
-    display = Display_OLED.Display_32(i2c, 0x3C)
-    # display = Display_OLED_64.Display_64(i2c, 0x3D)
-    # display = Display_text.Display()
 
     display.set_line_1(setup_name)
     display.set_line_2(current_pattern_name)
     display.set_line_3(f"{bpm} BPM")
 
-    DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
-    display_timeout_start = time.monotonic()
-    display_idle_flag = False
-    display_is_blanked = False
 
     print("\n**** READY ****")
 
@@ -627,7 +635,7 @@ def main():
 
                 # This doesn't seem necessary if we make the Mixer buffers small,
                 # which seems to work fine. This may change in the future, depending
-                # on our display, other peripherals, etcc.
+                # on our display, other peripherals, etc.
 
                 if USE_FANCY_TIMING:
                     tick_delta_ms = supervisor.ticks_ms() - tick_start_time_ms
