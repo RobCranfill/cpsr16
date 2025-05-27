@@ -463,10 +463,9 @@ def main():
                     TICK_SLEEP_TIME = delta / 1000000000
                     TICK_SLEEP_TIME /= 4
 
-                    # sanity check - ridiculously slow
+                    # sanity checks
                     if TICK_SLEEP_TIME > 1:
                         TICK_SLEEP_TIME = 1
-
                     bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
                     if bpm < 15:
                         bpm = 15
@@ -477,6 +476,7 @@ def main():
 
                     display.set_line_3(f"{bpm} BPM")
 
+            # Menu buttons?
             if b1 or b2 or b3:
                 setup_changed = False
                 # print(f"handle button {b1=} {b2=} {b3=}")
@@ -536,7 +536,7 @@ def main():
                         plattern_beats = setup_beats[current_pattern_name]
 
                         # print(f"  -> Advanced to pattern {current_pattern_name=}")
-                        display.set_line_1(current_pattern_name)
+                        display.set_line_2(current_pattern_name)
 
                     elif is_in_fill:
                         # no advance - go back to main pattern
@@ -547,7 +547,7 @@ def main():
                         plattern_beats = setup_beats[current_pattern_name]
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
-                        display.set_line_1(current_pattern_name)
+                        display.set_line_2(current_pattern_name)
 
                     advance_via_fill = False
                     is_in_fill = False
