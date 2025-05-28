@@ -38,11 +38,6 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
   * Some kind of box
   * USB power cable for MCU
 
-
-
-
-
-
 ## TO DO
   * Longer measures?
   * Implement hardware config file?
@@ -52,25 +47,28 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
 ## Hardware Configuration
 
 ### RP Pico
+| Signal   | Pico Pin # | Device |
+| -------- | -- | ------- |
+| I2C SDA  | 1  | Display SDA |
+| I2C SCL  | 2  | Display SCL |
+| GND      | 3*  | Display GND |
+| AUDIO_OUT_I2S_BIT  | 11 (board.GP8)  |  PCM BCLK |
+| AUDIO_OUT_I2S_WORD | 12 (board.GP9)  |  PCM WSEL |
+| AUDIO_OUT_I2S_DATA | 14 (board.GP10) |  PCM DIN  |
+| GND      | 18* |  PCM GND |
+| BUTTON_B | 21 (board.GP16) | Center menu button |
+| BUTTON_A | 22 (board.GP17) | Left-hand menu button |
+| GND      | 23*             | (all 3 buttons)
+| BUTTON_C | 24 (board.GP18) | Right-hand menu button |
+| GND      | 33* | Footswitch jack SLEEVE |
+| SWITCH_1 | 31 (board.GP28) | Footswitch jack RING |
+| SWITCH_2 | 32 (board.GP27) | Footswitch jack TIP |
+| 3v3      | 36 |  PCM VIN |
+| 3v3      | 36 | Display VIN |
 
+*Note: GND is GND - use whatever pin you want! For 
 
-| Signal | Pico Pin # | Device |
-| ---- | --- | ------- |
-| I2C SDA | 1  | Display SDA |
-| I2C SCL | 2  | Display SCL |
-| GND     | 3  | Display GND |
-| 3v3     | 36 | Display VIN |
-| AUDIO_OUT_I2S_BIT  | board.GP8 |  PCM XXX |
-| AUDIO_OUT_I2S_WORD | board.GP9 |  PCM XXX |
-| AUDIO_OUT_I2S_DATA | board.GP10 |  PCM XXX |
-| GND | 3 |  PCM ??? |
-| GND | 3 |  PCM GND |
-| 3v3 | 36 |  PCM VIN |
-| SWITCH_1 | board.GP28 | Jack SLEEVE | 
-| SWITCH_2 | board.GP27 | Jack TIP |
-| BUTTON_A | board.GP17 | Left-hand button | 
-| BUTTON_B | board.GP16 | Center button | 
-| BUTTON_C | board.GP18 | Right-hand button | 
+Also note: Pico is using "Adafruit UDA1334 I2S DAC" board; does not need XXX line tied to ground, as does the Amazon part.
 
 
 
