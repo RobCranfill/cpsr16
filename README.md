@@ -39,15 +39,43 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
   * USB power cable for MCU
 
 
+
+
+
+
 ## TO DO
   * Longer measures?
-  * Get rid of unused code - including Display superclass?
   * Implement hardware config file?
   * "Ready" beep?
+  * Volume control?
+
+## Hardware Configuration
+
+### RP Pico
+
+
+| Signal | Pico Pin # | Device |
+| ---- | --- | ------- |
+| I2C SDA | 1  | Display SDA |
+| I2C SCL | 2  | Display SCL |
+| GND     | 3  | Display GND |
+| 3v3     | 36 | Display VIN |
+| AUDIO_OUT_I2S_BIT  | board.GP8 |  PCM XXX |
+| AUDIO_OUT_I2S_WORD | board.GP9 |  PCM XXX |
+| AUDIO_OUT_I2S_DATA | board.GP10 |  PCM XXX |
+| GND | 3 |  PCM ??? |
+| GND | 3 |  PCM GND |
+| 3v3 | 36 |  PCM VIN |
+| SWITCH_1 | board.GP28 | Jack SLEEVE | 
+| SWITCH_2 | board.GP27 | Jack TIP |
+| BUTTON_A | board.GP17 | Left-hand button | 
+| BUTTON_B | board.GP16 | Center button | 
+| BUTTON_C | board.GP18 | Right-hand button | 
+
 
 
 ## Credits
-* Shout out to the wonderful Adafruit!
+* Shout-out to the wonderful Adafruit!
 * SR-16 samples from https://www.polynominal.com/sample-packs/Alesis-SR16-sample-pack/
 * Drum patterns from https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/
 
