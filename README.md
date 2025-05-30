@@ -22,6 +22,7 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
     * This is problematic. The Pico doesn't work well with SPI displays - not with what I'm asking of it.
     * A small I2C OLED display seems to work OK. Adafruit product #4440 (128x32) or #326 (128x64).
 
+
 ## Hardware List
   * Raspberry Pi Pico or similar MCU - https://www.adafruit.com/product/4864
     * Or upgrade to an RP2350-based MCU!
@@ -38,11 +39,13 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
   * Some kind of box
   * USB power cable for MCU
 
+
 ## TO DO
   * Longer measures?
   * Implement hardware config file?
   * "Ready" beep?
-  * Volume control?
+  * Overall volume control?
+
 
 ## Hardware Configuration
 
@@ -71,9 +74,8 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
 Also note: Pico is using "Adafruit UDA1334 I2S DAC" board; does not need XXX line tied to ground, as does the Amazon part.
 
 
-
 ## Credits
-* Shout-out to the wonderful Adafruit!
+* Shout-out to the wonderful Adafruit! & TodBot & DanH
 * SR-16 samples from https://www.polynominal.com/sample-packs/Alesis-SR16-sample-pack/
 * Drum patterns from https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/
 

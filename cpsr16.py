@@ -27,10 +27,10 @@ import Display_OLED
 
 
 ############# Hardware pin assignments
-# Pick one:
+# FIXME: Pico .vs. RP2350
 # TODO: Automate this - by checking hardware?
-import cpsr_hardware_pico as HARDWARE_CONFIG
-# import cpsr_hardware_2350 as HARDWARE_CONFIG
+# import cpsr_hardware_pico as HARDWARE_CONFIG
+import cpsr_hardware_2350 as HARDWARE_CONFIG
 
 
 # TODO: make this variable???
@@ -358,15 +358,15 @@ def main():
         displayio.release_displays()
 
         # FIXME: Pico .vs. RP2350
-        i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
-        # i2c = board.I2C()
+        # i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
+        i2c = board.I2C()
     except Exception as e:
         print("No I2C bus?")
         traceback.print_exception(e)
         return # from main
 
     ##### Initialize the I2C display.
-    # PICK ONE
+    # FIXME: Pico .vs. RP2350
     # display = Display_OLED.Display_32(i2c, 0x3C)
     display = Display_OLED.Display_64(i2c, 0x3D)
 
