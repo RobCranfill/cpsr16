@@ -1,8 +1,40 @@
-# CPSR16 - A CircutPython drum machine,
-# Loosely inspired by the Alesis SR-16
+"""
+cpsr16 - CircuitPython SR-16 - A CircuitPython drum machine
+=================================================
 
-# Hardcoded for 16ths! :-(
+A performance-oriented drum machine, 
+inspired by the ancient and venerable Alesis SR-16.
 
+* Author(s): Rob Cranfill - robcranfill@gmail.com
+
+Implementation Notes
+--------------------
+
+* Hardcoded for 16ths! :-(
+* Untested for other than 1 bar of 4 beats! :-(
+
+
+**Hardware:**
+
+* `Adafruit Device Description
+  <hyperlink>`_ (Product ID: <Product Number>)
+
+**Software and Dependencies:**
+
+* Adafruit CircuitPython firmware for the supported boards:
+  https://circuitpython.org/downloads
+
+* Adafruit's Bus Device library:
+  https://github.com/adafruit/Adafruit_CircuitPython_BusDevice
+
+* Adafruit's Register library:
+  https://github.com/adafruit/Adafruit_CircuitPython_Register
+
+
+**GitHub**
+* https://github.com/RobCranfill/cpsr16
+
+"""
 
 # stdlibs
 import gc
@@ -21,16 +53,21 @@ import displayio
 import keypad
 
 # our libs
-# Does it hurt anything to just import these all? For now, pick just one:
+# For debugging you can use the text-only "display".
 import Display_OLED
 # import Display_text
 
 
 ############# Hardware pin assignments
-# FIXME: Pico .vs. RP2350
+# Note: Hardware dependent sections are marked with the following:
+# FIXME: HARDWARE DEPENDENT
+#
 # TODO: Automate this - by checking hardware?
 # import cpsr_hardware_pico as HARDWARE_CONFIG
 import cpsr_hardware_2350 as HARDWARE_CONFIG
+
+
+__repo__ = "https://github.com/RobCranfill/cpsr16.git"
 
 
 # TODO: make this variable???
@@ -43,7 +80,7 @@ BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh
 # The data file we read.
 DATA_FILE_NAME = "rhythms-4-sr16.dict"
 
-# idle loop hander delay - needed?
+# idle loop hander delay - useful/needed?
 NOT_PLAYING_DELAY = 0.01
 
 # Mixer buffer size, per voice.
@@ -54,6 +91,8 @@ SAMPLE_RATE = 22050
 CHANNEL_COUNT = 1
 BITS_PER_SAMPLE = 16
 SAMPLES_SIGNED = True
+
+DISPLAY_TIMEOUT_SECONDS = 60
 
 # I thought this was useful, but setting the Mixer buffer size low seems to work fine!
 USE_FANCY_TIMING = False
@@ -357,23 +396,27 @@ def main():
         # Not sure why this is needed, but it seems to be:
         displayio.release_displays()
 
-        # FIXME: Pico .vs. RP2350
+        # FIXME: HARDWARE DEPENDENT
+        
+        # This is for Pico:
         # i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
+
+        # This is for Feather:
         i2c = board.I2C()
+
     except Exception as e:
         print("No I2C bus?")
         traceback.print_exception(e)
         return # from main
 
     ##### Initialize the I2C display.
-    # FIXME: Pico .vs. RP2350
+    # FIXME: HARDWARE DEPENDENT
     # display = Display_OLED.Display_32(i2c, 0x3C)
     display = Display_OLED.Display_64(i2c, 0x3D)
 
     # Or for no I2C display attached,
     # display = Display_text.Display()
 
-    DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
     display_timeout_start = time.monotonic()
     display_idle_flag = False
     display_is_blanked = False
