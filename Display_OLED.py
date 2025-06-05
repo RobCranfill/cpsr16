@@ -1,19 +1,17 @@
 """Display using Adafruit 128x32 or 128x64 I2C OLED.
    Display area is 3 rows of 21 characters."""
 
-import board
-import busio
 import random
 import time
 
-import displayio
-import i2cdisplaybus
 import adafruit_displayio_ssd1306
 from adafruit_display_text import label
+import displayio
+import i2cdisplaybus
 import terminalio
 
 
-WIDTH  = 128
+WIDTH = 128
 
 BLACK = 0x00_00_00
 WHITE = 0xFF_FF_FF
@@ -22,16 +20,17 @@ ANIMATION_INTERVAL = 1.0 # seconds
 
 
 class _Display:
+    """This is the superclass of all displays defined here."""
 
-    def __init__(self, i2c, oled_i2c_address, display_height):
+    def __init__(self, i2c, i2c_address, display_height):
 
         print(f"{__name__}.__init__: {display_height=}")
 
         # Do this or Bad Things happen.
         displayio.release_displays()
 
-        display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=oled_i2c_address)
-        display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=128, height=display_height)
+        display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=i2c_address)
+        display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=WIDTH, height=display_height)
 
         # Make the display context
         splash = displayio.Group()
@@ -45,9 +44,9 @@ class _Display:
         splash.append(bg_sprite)
 
         # Y-coordinates for the labels. This seems to be the most straightforward way.
-        go_big = (display_height > 32)
+        go_big = display_height > 32
         if go_big:
-            ys = [8, 30, 47, 58]
+            ys = [8, 30, 47]
             top_scale = 2
         else:
             ys = [4, 15, 26]
@@ -70,15 +69,23 @@ class _Display:
 
         self.__last_anim = time.monotonic()
 
+        self.__hold_text_1 = ""
+        self.__hold_text_2 = ""
+        self.__hold_text_3 = ""
+
         # print(".__init__() OK!")
 
+
     def set_line_1(self, text):
+        """Set the text of line 1. This will be BIG on lager displays."""
         self.__set_text_1(text)
 
     def set_line_2(self, text):
+        """Set the text of line 2. This will be BIG on larger displays."""
         self.__set_text_2(text)
-    
+
     def set_line_3(self, text):
+        """Set the text of line 3."""
         self.__set_text_3(text)
 
 
@@ -101,6 +108,7 @@ class _Display:
         self.__set_text_3(self.__hold_text_3)
 
     def animate_idle(self):
+        """Call this often while blanked. Will animate on its own schedule."""
         if time.monotonic() - ANIMATION_INTERVAL > self.__last_anim:
 
             c = chr(random.randrange(97, 97 + 26))
@@ -128,11 +136,12 @@ class _Display:
 # Public sub-classes
 
 class Display_32(_Display):
+    """Class supporting Adafruit 128x32 pixel OLED display."""
     def __init__(self, i2c, oled_i2c_address):
-        super().__init__(i2c, oled_i2c_address, 32)
+        super().__init__(i2c, oled_i2c_address, display_height=32)
 
 
 class Display_64(_Display):
+    """Class supporting Adafruit 128x64 pixel OLED display."""
     def __init__(self, i2c, oled_i2c_address):
-        super().__init__(i2c, oled_i2c_address, 64)
-
+        super().__init__(i2c, oled_i2c_address, display_height=64)

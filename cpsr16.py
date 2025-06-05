@@ -14,12 +14,12 @@ Implementation Notes
 * Untested for other than 1 bar of 4 beats! :-(
 
 
-**Hardware:**
+**Hardware**
 
 * `Adafruit Device Description
   <hyperlink>`_ (Product ID: <Product Number>)
 
-**Software and Dependencies:**
+**Software and Dependencies**
 
 * Adafruit CircuitPython firmware for the supported boards:
   https://circuitpython.org/downloads
@@ -411,6 +411,8 @@ def main():
 
     ##### Initialize the I2C display.
     # FIXME: HARDWARE DEPENDENT
+    # FIXME: also would like to remove specifying the I2C address here,
+    #  but can't figure out how
     # display = Display_OLED.Display_32(i2c, 0x3C)
     display = Display_OLED.Display_64(i2c, 0x3D)
 
