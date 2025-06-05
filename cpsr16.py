@@ -125,13 +125,16 @@ def init_audio():
     # TODO: catch exceptions
     audio_device = audiobusio.I2SOut(
         bit_clock =     HARDWARE_CONFIG.AUDIO_OUT_I2S_BIT,
-        word_select =   HARDWARE_CONFIG.AUDIO_OUT_I2S_WORD, 
+        word_select =   HARDWARE_CONFIG.AUDIO_OUT_I2S_WORD,
         data =          HARDWARE_CONFIG.AUDIO_OUT_I2S_DATA)
 
     return audio_device
 
 
 def init_mixer(audio_out, n_voices: int):
+    """Initialize and return the mixer object."""
+    
+    # TODO: Optimal buffer size?
 
     print(f"Creating mixer with {n_voices} voices....")
     mixer = audiomixer.Mixer(voice_count=n_voices,
@@ -145,8 +148,8 @@ def init_mixer(audio_out, n_voices: int):
 
 def init_all_switches():
     """return (footswitch 1, footswitch 2, button 1, button 2, button 3)"""
-    return keypad.Keys((HARDWARE_CONFIG.SWITCH_1, HARDWARE_CONFIG.SWITCH_2, 
-                        HARDWARE_CONFIG.BUTTON_A, HARDWARE_CONFIG.BUTTON_B, HARDWARE_CONFIG.BUTTON_C), 
+    return keypad.Keys((HARDWARE_CONFIG.SWITCH_1, HARDWARE_CONFIG.SWITCH_2,
+                        HARDWARE_CONFIG.BUTTON_A, HARDWARE_CONFIG.BUTTON_B, HARDWARE_CONFIG.BUTTON_C),
                        value_when_pressed=False, pull=True)
 
 
@@ -161,8 +164,7 @@ def load_setup(setups, setup_name):
 
 
 def load_pads(setup, setup_name):
-    """
-    Load the wave files for the pads and assign mixer channels.
+    """Load the wave files for the pads and assign mixer channels.
     Return dict of {pad_name: (chan,wav), ...}.
     """
     pads = setup[DICT_KEYWORD_PADS]
@@ -177,7 +179,7 @@ def load_pads(setup, setup_name):
     for pad_name, filename in pads.items():
         # print(f"  - loading '{pad_name}' from '{filename}'...")
 
-        # TODO: catch exception?
+        # TODO: catch exception? use 'with'?
         wav = audiocore.WaveFile(open(filename, "rb"))
         wavs[pad_name] = (channel, wav)
         channel += 1
@@ -230,10 +232,8 @@ def make_beats(pad_name, beat_pattern, channel):
 
 
 def load_beats_for_patterns(setup, wav_dict):
-    """Load all the beats for all the patterns, so we are ready to switch as needed."""
-
-    """
-    returns a dict like:
+    """Load all the beats for all the patterns, so we are ready to switch as needed.
+    Return a dict like:
       {"main_a": beats,
        "main_b": beats,
        ...
@@ -397,7 +397,7 @@ def main():
         displayio.release_displays()
 
         # FIXME: HARDWARE DEPENDENT
-        
+    
         # This is for Pico:
         # i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
 
@@ -520,10 +520,8 @@ def main():
                     if TICK_SLEEP_TIME > 1:
                         TICK_SLEEP_TIME = 1
                     bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
-                    if bpm < 15:
-                        bpm = 15
-                    elif bpm > 240:
-                        bpm = 240
+                    bpm = max(bpm,  45)
+                    bpm = min(bpm, 240)
 
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 

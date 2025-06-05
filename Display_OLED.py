@@ -102,6 +102,7 @@ class _Display:
         self.__set_text_3("")
 
     def unblank(self):
+        """Restore the screen."""
         # print("Un-blanking screen")
         self.__set_text_1(self.__hold_text_1)
         self.__set_text_2(self.__hold_text_2)
