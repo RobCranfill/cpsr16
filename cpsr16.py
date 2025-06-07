@@ -48,7 +48,6 @@ import audiobusio
 import audiocore
 import audiomixer
 import board
-import busio
 import displayio
 import keypad
 
@@ -133,10 +132,10 @@ def init_audio():
 
 def init_mixer(audio_out, n_voices: int):
     """Initialize and return the mixer object."""
-    
-    # TODO: Optimal buffer size?
 
     print(f"Creating mixer with {n_voices} voices....")
+
+    # TODO: Optimal buffer size?
     mixer = audiomixer.Mixer(voice_count=n_voices,
                              sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
                              bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
@@ -177,12 +176,34 @@ def load_pads(setup, setup_name):
     wavs = {}
     channel = 0
     for pad_name, filename in pads.items():
-        # print(f"  - loading '{pad_name}' from '{filename}'...")
+        print(f"  - loading '{pad_name}' from '{filename}'...")
 
-        # TODO: catch exception? use 'with'?
-        wav = audiocore.WaveFile(open(filename, "rb"))
-        wavs[pad_name] = (channel, wav)
-        channel += 1
+        # Does using a buffer here help the audio glitches? No. :-/
+
+        use_just_filename = True
+        if use_just_filename:
+            bytebuffer = bytearray(1024)
+            wav = audiocore.WaveFile(filename, bytebuffer)
+            wavs[pad_name] = (channel, wav)
+            channel += 1
+        else:
+            # TODO: catch exception? use 'with'?
+            use_with = True
+            if use_with:
+                try:
+                    with open(filename, "rb") as wav_file:
+                        bytebuffer = bytearray(1024)
+                        wav = audiocore.WaveFile(wav_file, bytebuffer)
+                        wavs[pad_name] = (channel, wav)
+                        channel += 1
+                except IOError:
+                    print(f"Can't load wav file '{filename}'")
+            else:
+                bytebuffer = bytearray(1024)
+                wav = audiocore.WaveFile(open(filename, "rb"), bytebuffer)
+                wavs[pad_name] = (channel, wav)
+                channel += 1
+
 
     print(f"  * {len(wavs)} wav files loaded ok")
     # print(f"  * {wavs=}")
@@ -295,13 +316,9 @@ def load_beats_for_patterns(setup, wav_dict):
     return all_beats
 
 def get_all_events(button_list):
-    """Return (f1, f2, a1, a2, a3) states"""
+    """Return (footswitch1, footswitch2, button1, button2, button3) states"""
 
-    f1 = False
-    f2 = False
-    b1 = False
-    b2 = False
-    b3 = False
+    f1 = f2 = b1 = b2 = b3 = False
 
     # event will be None if nothing has happened.
     event = button_list.events.get()
@@ -325,6 +342,7 @@ def get_all_events(button_list):
 
 
 def get_free_mem():
+    """Force garbage collection and return the amount of free memory."""
     gc.collect()
     return gc.mem_free()
 
@@ -339,9 +357,9 @@ def load_setup_pads(setups, name):
     # Load the wavs for the pads
     wavs_for_channels = load_pads(this_setup, name)
     wav_table = [None] * len(wavs_for_channels)
-    for k, v in wavs_for_channels.items():
+    for v in wavs_for_channels.values():
         chan = v[0]
-        wav = v[1]
+        wav  = v[1]
         wav_table[chan] = wav
     # print(f" * built wave table: {wav_table}")
 
