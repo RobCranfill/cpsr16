@@ -51,6 +51,7 @@ import keypad
 # For debugging you can use the text-only "display".
 import Display_OLED
 # import Display_text
+REDUCE_OLED_DISPLAY = True
 
 
 ############# Hardware pin assignments
@@ -465,7 +466,7 @@ def main():
 
     this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
-    bpm = 120
+    bpm = 60
     TICK_SLEEP_TIME = bpm_to_sleep_time(bpm)
     TICK_SLEEP_TIME_MS = TICK_SLEEP_TIME * 1_000
 
@@ -493,7 +494,8 @@ def main():
 
 
     display.set_line_1(setup_name)
-    display.set_line_2(current_pattern_name)
+    if not REDUCE_OLED_DISPLAY:
+        display.set_line_2(current_pattern_name)
     display.set_line_3(f"{bpm} BPM")
 
 
@@ -609,7 +611,8 @@ def main():
                         plattern_beats = setup_beats[current_pattern_name]
 
                         # print(f"  -> Advanced to pattern {current_pattern_name=}")
-                        display.set_line_2(current_pattern_name)
+                        if not REDUCE_OLED_DISPLAY:
+                            display.set_line_2(current_pattern_name)
 
                     elif is_in_fill:
                         # no advance - go back to main pattern
@@ -620,7 +623,8 @@ def main():
                         plattern_beats = setup_beats[current_pattern_name]
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
-                        display.set_line_2(current_pattern_name)
+                        if not REDUCE_OLED_DISPLAY:
+                            display.set_line_2(current_pattern_name)
 
                     advance_via_fill = False
                     is_in_fill = False
