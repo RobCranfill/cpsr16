@@ -1,6 +1,50 @@
 [
     {
-    "comment": "For testing, not necessarily for keeping.",
+    "overall-comment": "SR-16 audio from https://www.polynominal.com/sample-packs/Alesis-SR16-sample-pack/",
+    "overall-comment": "SR-16 patterns from https://www.synthmania.com/sr-16.htm",
+    "overall-comment": "Beats from https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
+
+    "comment": "First attempt at an SR-16 pattern",
+    "setup": "00 Rock 1",
+    "pads":
+        {
+        "hi_hat_open": "wav/sr16-OP_HAT1a.wav",
+        "crash":       "wav/sr16-CRASH1a.wav",
+        "snare":       "wav/sr16-SNR01.wav",
+        "kick":        "wav/sr16-BD01.wav",
+        }
+    "patterns":
+        {
+        "main a":
+            {
+            "hi_hat_open":   "9999 9999 9999 9999",
+            "crash":        "0000 0000 0000 0009",
+            "snare":           "--9- --9- --9- --9-",
+            "kick":            "9--- 9--- 9--- 99--",
+            },
+        "fill a"
+            {
+            "hi_hat_open":   "9999 9999 9999 9999",
+            "snare":           "--9- --9- --9- --9-",
+            "kick":            "9--- 9--- 9--- 99--",
+            },
+        "main b":
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- ---- ---- ----",
+            "kick":            "---- ---- ---- ----"
+            },
+        "fill b":
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- ---- ---- ----",
+            "kick":            "---- ---- ---- ----"
+            }
+        }
+    },
+
+    {
+    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
     "setup": "Rock 0",
     "pads":
         {
@@ -36,8 +80,9 @@
             }
         }
     },
-{
-    "comment": "First try using SR-16 sounds; beats from https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
+
+    {
+    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
     "setup": "Rock 1",
     "pads":
         {
