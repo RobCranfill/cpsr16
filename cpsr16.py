@@ -1,13 +1,35 @@
 """
- CPSR16 - A CircutPython drum machine.
- Loosely inspired by the Alesis SR-16
+cpsr16 - CircuitPython SR-16 - A CircuitPython drum machine
+=================================================
 
- Hardcoded for 1 measure of 16th notes! :-(
+A performance-oriented drum machine, 
+inspired by the ancient and venerable Alesis SR-16.
 
- See https://github.com/RobCranfill/cpsr16
+* Author(s): Rob Cranfill - robcranfill@gmail.com
+
+Implementation Notes
+--------------------
+
+* Hardcoded for 16ths! :-(
+* Untested for other than 1 bar of 4 beats! :-(
+
+
+**Hardware**
+
+* `Adafruit Device Description
+  https://www.adafruit.com/product/4864`_ (Product ID: <4864>)
+
+**Software and Dependencies**
+
+* Adafruit CircuitPython firmware for the supported boards:
+  https://circuitpython.org/downloads
+
+* etc, TBD
+
+**GitHub**
+* https://github.com/RobCranfill/cpsr16
 
 """
-
 
 # stdlibs
 import gc
@@ -21,22 +43,26 @@ import audiobusio
 import audiocore
 import audiomixer
 import board
-import busio
 import digitalio
 import displayio
 import keypad
 
 # our libs
-# Does it hurt anything to just import these all? For now, pick just one:
+# For debugging you can use the text-only "display".
 import Display_OLED
 # import Display_text
 
 
 ############# Hardware pin assignments
-# Pick one:
+# Note: Hardware dependent sections are marked with the following:
+# FIXME: HARDWARE DEPENDENT
+#
 # TODO: Automate this - by checking hardware?
-import cpsr_hardware_pico as HARDWARE_CONFIG
-# import cpsr_hardware_2350 as HARDWARE_CONFIG
+# import cpsr_hardware_pico as HARDWARE_CONFIG
+import cpsr_hardware_2350 as HARDWARE_CONFIG
+
+
+__repo__ = "https://github.com/RobCranfill/cpsr16.git"
 
 
 # TODO: make this variable???
@@ -49,7 +75,7 @@ BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh
 # The data file we read.
 DATA_FILE_NAME = "rhythms-4-sr16.dict"
 
-# idle loop hander delay - needed?
+# idle loop hander delay - useful/needed?
 NOT_PLAYING_DELAY = 0.01
 
 # Mixer buffer size, per voice.
@@ -60,6 +86,8 @@ SAMPLE_RATE = 22050
 CHANNEL_COUNT = 1
 BITS_PER_SAMPLE = 16
 SAMPLES_SIGNED = True
+
+DISPLAY_TIMEOUT_SECONDS = 60
 
 # I thought this was useful, but setting the Mixer buffer size low seems to work fine!
 USE_FANCY_TIMING = False
@@ -77,7 +105,7 @@ def read_json(filename):
     """Returns the de-JSON-ed data, a big object heirarchy."""
 
     print(f"* Reading config {filename}...")
-    with open(filename, encoding="ascii") as f:
+    with open(filename) as f:
         data = f.read()
     # print(f">>> read_json: {data}")
 
@@ -92,15 +120,18 @@ def init_audio():
     # TODO: catch exceptions
     audio_device = audiobusio.I2SOut(
         bit_clock =     HARDWARE_CONFIG.AUDIO_OUT_I2S_BIT,
-        word_select =   HARDWARE_CONFIG.AUDIO_OUT_I2S_WORD, 
+        word_select =   HARDWARE_CONFIG.AUDIO_OUT_I2S_WORD,
         data =          HARDWARE_CONFIG.AUDIO_OUT_I2S_DATA)
 
     return audio_device
 
 
 def init_mixer(audio_out, n_voices: int):
+    """Initialize and return the mixer object."""
 
     print(f"Creating mixer with {n_voices} voices....")
+
+    # TODO: Optimal buffer size?
     mixer = audiomixer.Mixer(voice_count=n_voices,
                              sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
                              bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
@@ -112,8 +143,8 @@ def init_mixer(audio_out, n_voices: int):
 
 def init_all_switches():
     """return (footswitch 1, footswitch 2, button 1, button 2, button 3)"""
-    return keypad.Keys((HARDWARE_CONFIG.SWITCH_1, HARDWARE_CONFIG.SWITCH_2, 
-                        HARDWARE_CONFIG.BUTTON_A, HARDWARE_CONFIG.BUTTON_B, HARDWARE_CONFIG.BUTTON_C), 
+    return keypad.Keys((HARDWARE_CONFIG.SWITCH_1, HARDWARE_CONFIG.SWITCH_2,
+                        HARDWARE_CONFIG.BUTTON_A, HARDWARE_CONFIG.BUTTON_B, HARDWARE_CONFIG.BUTTON_C),
                        value_when_pressed=False, pull=True)
 
 
@@ -128,8 +159,7 @@ def load_setup(setups, setup_name):
 
 
 def load_pads(setup, setup_name):
-    """
-    Load the wave files for the pads and assign mixer channels.
+    """Load the wave files for the pads and assign mixer channels.
     Return dict of {pad_name: (chan,wav), ...}.
     """
     pads = setup[DICT_KEYWORD_PADS]
@@ -142,12 +172,34 @@ def load_pads(setup, setup_name):
     wavs = {}
     channel = 0
     for pad_name, filename in pads.items():
-        # print(f"  - loading '{pad_name}' from '{filename}'...")
+        print(f"  - loading '{pad_name}' from '{filename}'...")
 
-        # TODO: catch exception?
-        wav = audiocore.WaveFile(open(filename, "rb"))
-        wavs[pad_name] = (channel, wav)
-        channel += 1
+        # Does using a buffer here help the audio glitches? No. :-/
+
+        use_just_filename = True
+        if use_just_filename:
+            bytebuffer = bytearray(1024)
+            wav = audiocore.WaveFile(filename, bytebuffer)
+            wavs[pad_name] = (channel, wav)
+            channel += 1
+        else:
+            # TODO: catch exception? use 'with'?
+            use_with = True
+            if use_with:
+                try:
+                    with open(filename, "rb") as wav_file:
+                        bytebuffer = bytearray(1024)
+                        wav = audiocore.WaveFile(wav_file, bytebuffer)
+                        wavs[pad_name] = (channel, wav)
+                        channel += 1
+                except IOError:
+                    print(f"Can't load wav file '{filename}'")
+            else:
+                bytebuffer = bytearray(1024)
+                wav = audiocore.WaveFile(open(filename, "rb"), bytebuffer)
+                wavs[pad_name] = (channel, wav)
+                channel += 1
+
 
     print(f"  * {len(wavs)} wav files loaded ok")
     # print(f"  * {wavs=}")
@@ -197,10 +249,8 @@ def make_beats(pad_name, beat_pattern, channel):
 
 
 def load_beats_for_patterns(setup, wav_dict):
-    """Load all the beats for all the patterns, so we are ready to switch as needed."""
-
-    """
-    returns a dict like:
+    """Load all the beats for all the patterns, so we are ready to switch as needed.
+    Return a dict like:
       {"main_a": beats,
        "main_b": beats,
        ...
@@ -262,13 +312,9 @@ def load_beats_for_patterns(setup, wav_dict):
     return all_beats
 
 def get_all_events(button_list):
-    """Return (f1, f2, a1, a2, a3) states"""
+    """Return (footswitch1, footswitch2, button1, button2, button3) states"""
 
-    f1 = False
-    f2 = False
-    b1 = False
-    b2 = False
-    b3 = False
+    f1 = f2 = b1 = b2 = b3 = False
 
     # event will be None if nothing has happened.
     event = button_list.events.get()
@@ -292,6 +338,7 @@ def get_all_events(button_list):
 
 
 def get_free_mem():
+    """Force garbage collection and return the amount of free memory."""
     gc.collect()
     return gc.mem_free()
 
@@ -308,7 +355,7 @@ def load_setup_pads(setups, name):
     wav_table = [None] * len(wavs_for_channels)
     for v in wavs_for_channels.values():
         chan = v[0]
-        wav = v[1]
+        wav  = v[1]
         wav_table[chan] = wav
     # print(f" * built wave table: {wav_table}")
 
@@ -358,6 +405,7 @@ def main():
     ##### Initialize the I2S (not I2C) audio hardware.
     audio_out = init_audio()
 
+
     ##### Initialize the I2C hardware.
     try:
         # Not sure why this is needed, but it seems to be:
@@ -365,22 +413,22 @@ def main():
 
         # FIXME: ***** Pico .vs. RP2350
 
-        # FIXME:***** FOR PICO
-        #
-        i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
+        # # FIXME:***** FOR PICO
+        # #
+        # i2c = busio.I2C(scl = HARDWARE_CONFIG.BOARD_SCL, sda = HARDWARE_CONFIG.BOARD_SDA)
 
-        pico_pwr_pin = board.GP23  # HIGH = improved ripple (lower noise) but less efficient
-        pwr_mode = digitalio.DigitalInOut(pico_pwr_pin)
-        pwr_mode.switch_to_output(value=True)
+        # pico_pwr_pin = board.GP23  # HIGH = improved ripple (lower noise) but less efficient
+        # pwr_mode = digitalio.DigitalInOut(pico_pwr_pin)
+        # pwr_mode.switch_to_output(value=True)
 
         # FIXME:***** FOR FEATHER
         #
-        # i2c = board.I2C()
+        i2c = board.I2C()
 
         ##### Initialize the I2C display.
         # PICK ONE
-        display = Display_OLED.Display_32(i2c, 0x3C)
-        # display = Display_OLED.Display_64(i2c, 0x3D)
+        # display = Display_OLED.Display_32(i2c, 0x3C)
+        display = Display_OLED.Display_64(i2c, 0x3D)
 
     except Exception as e:
         print("No I2C bus?")
@@ -391,10 +439,7 @@ def main():
         import Display_text
         display = Display_text.Display_text()
 
-        # return # from main
 
-
-    DISPLAY_TIMEOUT_SECONDS = 10 # FOR TESTING
     display_timeout_start = time.monotonic()
     display_idle_flag = False
     display_is_blanked = False
@@ -403,6 +448,7 @@ def main():
     # TODO: Handle malformed data?
     all_setups = read_json(DATA_FILE_NAME)
     if len(all_setups) == 0:
+        # TODO: display on screen?
         print("\nGotta have some data!")
         sys.exit()
     # print(f" ! setups: {all_setups}")
@@ -496,10 +542,8 @@ def main():
                     if TICK_SLEEP_TIME > 1:
                         TICK_SLEEP_TIME = 1
                     bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
-                    if bpm < 15:
-                        bpm = 15
-                    elif bpm > 240:
-                        bpm = 240
+                    bpm = max(bpm,  45)
+                    bpm = min(bpm, 240)
 
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
