@@ -3,6 +3,7 @@
 
 import board
 
+print(f"Importing {__name__} for hardware definition.")
 
 ############# Hardware pin assignments
 
