@@ -550,8 +550,9 @@ def main():
                     if TICK_SLEEP_TIME > 1:
                         TICK_SLEEP_TIME = 1
                     bpm = bpm_from_tap_time(TICK_SLEEP_TIME)
-                    bpm = max(bpm,  45)
-                    bpm = min(bpm, 240)
+
+                    # peg it between some reaonable bounds. What?
+                    bpm = min(max(bpm, 45), 240)
 
                     print(f" ** tempo tap {TICK_SLEEP_TIME=} -> {bpm} BPM")
 
