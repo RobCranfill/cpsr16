@@ -16,8 +16,7 @@ Implementation Notes
 
 **Hardware**
 
-* `Adafruit Device Description
-  https://www.adafruit.com/product/4864`_ (Product ID: <4864>)
+* `Adafruit Pico microcontroller https://www.adafruit.com/product/4864`_ (Product ID: <4864>)
 
 **Software and Dependencies**
 
@@ -46,11 +45,18 @@ import board
 import digitalio
 import displayio
 import keypad
+import supervisor
+
 
 # our libs
 # For debugging you can use the text-only "display".
 import Display_OLED
 # import Display_text
+
+
+# This works around the bug wherein OLED updates cause audio glitches.
+# When this is True, we don't update the display while making sound. :-(
+#
 REDUCE_OLED_DISPLAY = True
 
 
@@ -81,7 +87,7 @@ NOT_PLAYING_DELAY = 0.01
 
 # Mixer buffer size, per voice.
 # What is the best value? Esp w/r/t "fancy timing"?
-AUDIO_BUFFER_BYTES = 256
+MIXER_BUFFER_BYTES = 256
 
 SAMPLE_RATE = 22050
 CHANNEL_COUNT = 1
@@ -106,7 +112,7 @@ def read_json(filename):
     """Returns the de-JSON-ed data, a big object heirarchy."""
 
     print(f"* Reading config {filename}...")
-    with open(filename) as f:
+    with open(filename, encoding="utf8") as f:
         data = f.read()
     # print(f">>> read_json: {data}")
 
@@ -136,7 +142,7 @@ def init_mixer(audio_out, n_voices: int):
     mixer = audiomixer.Mixer(voice_count=n_voices,
                              sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
                              bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
-                             buffer_size=AUDIO_BUFFER_BYTES * n_voices)
+                             buffer_size=MIXER_BUFFER_BYTES * n_voices)
 
     audio_out.play(mixer) # attach mixer to audio playback
     return mixer
@@ -364,7 +370,7 @@ def load_setup_pads(setups, name):
 
 
 def load_beats_and_mixer(audio_out, all_setups, setup_name):
-    """Return this_setup, wavs_for_channels, wavetable, setup_beats, mixer """
+    """Return wavs_for_channels, wavetable, setup_beats, mixer """
 
     print(f"Loading setup '{setup_name}'")
 
@@ -376,7 +382,7 @@ def load_beats_and_mixer(audio_out, all_setups, setup_name):
     # Allocate a mixer with just enough channels.
     mixer = init_mixer(audio_out, len(wavs_for_channels))
 
-    return this_setup, wavs_for_channels, wavetable, setup_beats, mixer
+    return wavetable, setup_beats, mixer
 
 
 def bpm_from_tap_time(tap_time_seconds):
@@ -464,7 +470,7 @@ def main():
     setup_names = get_setup_names(all_setups)
     setup_name = setup_names[setup_index]
 
-    this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+    wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
 
     bpm = 60
     TICK_SLEEP_TIME = bpm_to_sleep_time(bpm)
@@ -554,7 +560,7 @@ def main():
             # Menu buttons?
             if b1 or b2 or b3:
                 setup_changed = False
-                # print(f"handle button {b1=} {b2=} {b3=}")
+                print(f"handle button {b1=} {b2=} {b3=}")
                 if b1:
                     setup_index = (setup_index+1) % len(setup_names)
                     setup_name = setup_names[setup_index]
@@ -568,7 +574,7 @@ def main():
 
                 if setup_changed:
                     # Get all the data for the new setup.
-                    this_setup, wavs_for_channels, wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+                    wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
                     plattern_beats = setup_beats[current_pattern_name]
                     display.set_line_1(setup_name)
 
@@ -721,7 +727,6 @@ def main():
 # Let's do it!
 
 # for performance improvement; otherwise we get audio glitches when auto-reloads.
-import supervisor
 supervisor.runtime.autoreload = False
 print(f"**** {supervisor.runtime.autoreload=}\n")
 

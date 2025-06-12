@@ -19,10 +19,9 @@ AUDIO_OUT_I2S_DATA = board.D11
 SWITCH_1 = board.D6 # left-hand (haha) footswitch: start/stop, mostly
 SWITCH_2 = board.D5 # right-hand footswitch: fill, tap
 
-BUTTON_A = board.D12 # middle = up
-# not yet:
-BUTTON_B = board.D13 # left = down
-BUTTON_C = board.D25 # does nothing yet
+BUTTON_A = board.A2 # middle = up
+BUTTON_B = board.A1 # left = down
+BUTTON_C = board.A0 # does nothing yet, if ever.
 
 # end hardware-dependent section -------------------------------------------------
 
