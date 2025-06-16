@@ -52,6 +52,7 @@ import supervisor
 # For debugging you can use the text-only "display".
 import Display_OLED
 # import Display_text
+import phase_display
 
 
 # This works around the bug wherein OLED updates cause audio glitches.
@@ -401,6 +402,12 @@ def bpm_to_sleep_time(bpm):
 ###########################################################
 def main():
 
+    phaser = phase_display.Phase_Display()
+    for p in range(1,5):
+        phaser.set_phase(p)
+        time.sleep(1)
+    phaser.set_phase(0)
+
     print(f"Free mem at start: {get_free_mem()}")
 
     # "Wait a little bit so USB can stabilize and not glitch audio"
@@ -490,13 +497,14 @@ def main():
     last_tempo_tap = 0
 
     current_pattern_name = DICT_KEYWORD_MAIN_A
+    phaser.set_phase(1)
 
-    # 'plattern_beats' is the main data structure we are using as we play a rhythm.
+    # 'pattern_beats' is the main data structure we are using as we play a rhythm.
     # It is a list of size TICKS_PER_MEASURE, with a list of each voice to be played that tick.
     # That is, a list of (channel, volume) pairs.
     #
-    plattern_beats = setup_beats[current_pattern_name]
-    print(f"{plattern_beats=}")
+    pattern_beats = setup_beats[current_pattern_name]
+    print(f"{pattern_beats=}")
 
 
     display.set_line_1(setup_name)
@@ -576,7 +584,7 @@ def main():
                 if setup_changed:
                     # Get all the data for the new setup.
                     wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
-                    plattern_beats = setup_beats[current_pattern_name]
+                    pattern_beats = setup_beats[current_pattern_name]
                     display.set_line_1(setup_name)
 
             # Idle handler.
@@ -613,9 +621,11 @@ def main():
                         # print(" ** advance_via_fill")
                         if current_pattern_name == DICT_KEYWORD_FILL_A:
                             current_pattern_name = DICT_KEYWORD_MAIN_B
+                            phaser.set_phase(3)
                         else:
                             current_pattern_name = DICT_KEYWORD_MAIN_A
-                        plattern_beats = setup_beats[current_pattern_name]
+                            phaser.set_phase(1)
+                        pattern_beats = setup_beats[current_pattern_name]
 
                         # print(f"  -> Advanced to pattern {current_pattern_name=}")
                         if not REDUCE_OLED_DISPLAY:
@@ -627,7 +637,7 @@ def main():
                             current_pattern_name = DICT_KEYWORD_MAIN_A
                         else:
                             current_pattern_name = DICT_KEYWORD_MAIN_B
-                        plattern_beats = setup_beats[current_pattern_name]
+                        pattern_beats = setup_beats[current_pattern_name]
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
 
                         if not REDUCE_OLED_DISPLAY:
@@ -653,7 +663,7 @@ def main():
                     if not is_playing:
                         print("* STOPPING")
                         current_pattern_name = DICT_KEYWORD_MAIN_A
-                        plattern_beats = setup_beats[current_pattern_name]
+                        pattern_beats = setup_beats[current_pattern_name]
                         break
 
                 if fill_button:
@@ -664,10 +674,13 @@ def main():
                         is_in_fill = True
                         if current_pattern_name == DICT_KEYWORD_MAIN_A:
                             current_pattern_name = DICT_KEYWORD_FILL_A
+                            phaser.set_phase(2)
                         else:
                             current_pattern_name = DICT_KEYWORD_FILL_B
-                        plattern_beats = setup_beats[current_pattern_name]
-                        fill_downbeat = plattern_beats[0]
+                            phaser.set_phase(4)
+
+                        pattern_beats = setup_beats[current_pattern_name]
+                        fill_downbeat = pattern_beats[0]
                         # print(f"  -> Switched to pattern {current_pattern_name=}")
                         # print(f"     Saving fill downbeat {fill_downbeat=}")
 
@@ -679,7 +692,7 @@ def main():
                     # print(f"  Playing fill downbeat {hit_list=}")
                     fill_downbeat = None
                 else:
-                    hit_list = plattern_beats[tick_number]
+                    hit_list = pattern_beats[tick_number]
 
                 # print(f"  Hit list: {hit_list}")
                 if len(hit_list) > 0:
