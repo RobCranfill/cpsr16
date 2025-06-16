@@ -404,9 +404,10 @@ def main():
 
     print(f"Free mem at start: {get_free_mem()}")
 
-    phaser = phase_display.Phase_Display()
-    for p in range(1,5):
-        phaser.set_phase(p)
+    phases = [DICT_KEYWORD_MAIN_A, DICT_KEYWORD_FILL_A, DICT_KEYWORD_MAIN_B, DICT_KEYWORD_FILL_B]
+    phaser = phase_display.Phase_Display(phases)
+    for p in phases:
+        phaser.set_phase_by_name(p)
         time.sleep(.5)
 
     # "Wait a little bit so USB can stabilize and not glitch audio"
@@ -417,7 +418,6 @@ def main():
 
     ##### Initialize the I2S (not I2C) audio hardware.
     audio_out = init_audio()
-
 
     ##### Initialize the I2C hardware.
     try:
@@ -446,7 +446,7 @@ def main():
     except Exception as e:
         print("No I2C bus?")
 
-        # traceback.print_exception(e)
+        traceback.print_exception(e)
 
         print("** Creating text display....")
         import Display_text
@@ -512,7 +512,7 @@ def main():
 
 
     print("\n**** READY ****")
-    phaser.set_phase(0)
+    phaser.set_phase_by_name("off")
 
     while True:
 
@@ -539,7 +539,7 @@ def main():
                 is_playing = True
                 # print(f" left -> {is_playing=}, {current_pattern_name=}")
                 last_tempo_tap = 0
-                phaser.set_phase(1)
+                phaser.set_phase_by_name(current_pattern_name)
 
 
             # User-input "tap time".
@@ -622,13 +622,12 @@ def main():
                         # print(" ** advance_via_fill")
                         if current_pattern_name == DICT_KEYWORD_FILL_A:
                             current_pattern_name = DICT_KEYWORD_MAIN_B
-                            phaser.set_phase(3)
                         else:
                             current_pattern_name = DICT_KEYWORD_MAIN_A
-                            phaser.set_phase(1)
                         pattern_beats = setup_beats[current_pattern_name]
-
+                        phaser.set_phase_by_name(current_pattern_name)
                         # print(f"  -> Advanced to pattern {current_pattern_name=}")
+
                         if not REDUCE_OLED_DISPLAY:
                             display.set_line_2(current_pattern_name)
 
@@ -636,14 +635,12 @@ def main():
                         # no advance - go back to main pattern
                         if current_pattern_name == DICT_KEYWORD_FILL_A:
                             current_pattern_name = DICT_KEYWORD_MAIN_A
-                            phaser.set_phase(1)
                         else:
                             current_pattern_name = DICT_KEYWORD_MAIN_B
-                            phaser.set_phase(3)
 
                         pattern_beats = setup_beats[current_pattern_name]
+                        phaser.set_phase_by_name(current_pattern_name)
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
-
 
                         if not REDUCE_OLED_DISPLAY:
                             display.set_line_2(current_pattern_name)
@@ -669,7 +666,7 @@ def main():
                         print("* STOPPING")
                         current_pattern_name = DICT_KEYWORD_MAIN_A
                         pattern_beats = setup_beats[current_pattern_name]
-                        phaser.set_phase(0)
+                        phaser.set_phase_by_name("off")
                         break
 
                 if fill_button:
@@ -680,13 +677,13 @@ def main():
                         is_in_fill = True
                         if current_pattern_name == DICT_KEYWORD_MAIN_A:
                             current_pattern_name = DICT_KEYWORD_FILL_A
-                            phaser.set_phase(2)
                         else:
                             current_pattern_name = DICT_KEYWORD_FILL_B
-                            phaser.set_phase(4)
 
                         pattern_beats = setup_beats[current_pattern_name]
                         fill_downbeat = pattern_beats[0]
+                        phaser.set_phase_by_name(current_pattern_name)
+
                         # print(f"  -> Switched to pattern {current_pattern_name=}")
                         # print(f"     Saving fill downbeat {fill_downbeat=}")
 

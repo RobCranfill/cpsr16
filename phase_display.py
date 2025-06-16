@@ -1,7 +1,8 @@
 """NeoPixel stick LED display.
 8 LEDs"""
 
-# TODO: Use phases "DICT_KEYWORD_FILL_A", etc?
+# TODO: Support phase name "off"?
+
 
 import time
 import board
@@ -12,32 +13,39 @@ pixel_pin = board.D13
 num_pixels = 8
 ORDER = neopixel.GRB
 
-black = (0, 0, 0)
+off = (0, 0, 0)
 red = (0, 255, 0)
 green = (255, 0, 0)
-phase_colors = [black, green, red, green, red]
+phase_colors = [off, green, red, green, red]
 
 
 class Phase_Display:
-    """Display the pattern 'pjhase' on a NeoPixel Strip."""
-    def __init__(self):
+    """Display the pattern 'phase' on a NeoPixel Strip."""
+    def __init__(self, phase_names):
 
         self._pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2,
                                          auto_write=False, pixel_order=ORDER)
 
-    def set_phase(self, phase):
-        """Phase is 0-4, inclusive."""
-        # print(f" {__name__}: {phase=}")
-        
+        # Off and then the 4 phases.
+        self._phase_names = ["off"] + phase_names
+
+
+    def set_phase_by_name(self, phase):
+        """Set the phase as indicated in the list passed in at object construction."""
+
         self._pixels.fill(phase_colors[0])
 
-        for j in range(1, phase+1):
+        # light LED pairs according to phase_colors
+        phase_index = self._phase_names.index(phase)
+        for j in range(1, phase_index+1):
             l1 = 2*(j-1)
-            self._pixels[l1] = phase_colors[j]
+            self._pixels[l1]  = phase_colors[j]
             self._pixels[l1+1] = phase_colors[j]
+
         self._pixels.show()
 
-# not really used?
+
+# not really used
 
     def wheel(self, pos):
 
