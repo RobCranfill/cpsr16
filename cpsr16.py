@@ -402,13 +402,12 @@ def bpm_to_sleep_time(bpm):
 ###########################################################
 def main():
 
+    print(f"Free mem at start: {get_free_mem()}")
+
     phaser = phase_display.Phase_Display()
     for p in range(1,5):
         phaser.set_phase(p)
-        time.sleep(1)
-    phaser.set_phase(0)
-
-    print(f"Free mem at start: {get_free_mem()}")
+        time.sleep(.5)
 
     # "Wait a little bit so USB can stabilize and not glitch audio"
     # TODO: needed?
@@ -497,7 +496,6 @@ def main():
     last_tempo_tap = 0
 
     current_pattern_name = DICT_KEYWORD_MAIN_A
-    phaser.set_phase(1)
 
     # 'pattern_beats' is the main data structure we are using as we play a rhythm.
     # It is a list of size TICKS_PER_MEASURE, with a list of each voice to be played that tick.
@@ -514,6 +512,7 @@ def main():
 
 
     print("\n**** READY ****")
+    phaser.set_phase(0)
 
     while True:
 
@@ -540,6 +539,8 @@ def main():
                 is_playing = True
                 # print(f" left -> {is_playing=}, {current_pattern_name=}")
                 last_tempo_tap = 0
+                phaser.set_phase(1)
+
 
             # User-input "tap time".
             # TODO: This could average the last few taps, or just take the last one, for now.
@@ -635,10 +636,14 @@ def main():
                         # no advance - go back to main pattern
                         if current_pattern_name == DICT_KEYWORD_FILL_A:
                             current_pattern_name = DICT_KEYWORD_MAIN_A
+                            phaser.set_phase(1)
                         else:
                             current_pattern_name = DICT_KEYWORD_MAIN_B
+                            phaser.set_phase(3)
+
                         pattern_beats = setup_beats[current_pattern_name]
                         # print(f"  -> Reverted to pattern {current_pattern_name=}")
+
 
                         if not REDUCE_OLED_DISPLAY:
                             display.set_line_2(current_pattern_name)
@@ -664,6 +669,7 @@ def main():
                         print("* STOPPING")
                         current_pattern_name = DICT_KEYWORD_MAIN_A
                         pattern_beats = setup_beats[current_pattern_name]
+                        phaser.set_phase(0)
                         break
 
                 if fill_button:

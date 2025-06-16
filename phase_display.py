@@ -1,5 +1,7 @@
-# SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
-# SPDX-License-Identifier: MIT
+"""NeoPixel stick LED display.
+8 LEDs"""
+
+# TODO: Use phases "DICT_KEYWORD_FILL_A", etc?
 
 import time
 import board
@@ -25,14 +27,12 @@ class Phase_Display:
 
     def set_phase(self, phase):
         """Phase is 0-4, inclusive."""
-        print(f" phase {phase}")
+        # print(f" {__name__}: {phase=}")
         
         self._pixels.fill(phase_colors[0])
-        self._pixels.show()
 
         for j in range(1, phase+1):
             l1 = 2*(j-1)
-            print(f" {l1=}")
             self._pixels[l1] = phase_colors[j]
             self._pixels[l1+1] = phase_colors[j]
         self._pixels.show()
