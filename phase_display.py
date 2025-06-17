@@ -1,51 +1,58 @@
 """NeoPixel stick LED display.
 8 LEDs"""
 
-# TODO: Support phase name "off"?
-
+# support "pre-next" phases (fill_a -> b and fill_b -> a)
 
 import time
 import board
 import neopixel
 
 
-pixel_pin = board.D13
-num_pixels = 8
+# pixel_pin = board.D13
+NUM_PIXELS = 8
 ORDER = neopixel.GRB
 
-off = (0, 0, 0)
-red = (0, 255, 0)
-green = (255, 0, 0)
-phase_colors = [off, green, red, green, red]
+# wtf? i thought this was GRB order, as noted above, but now it's not
+off =   ( 0, 0, 0)
+red =   (255, 0, 0)
+green = (0, 255, 0)
+blue = (0, 0, 255)
+
+off2 = (off, off)
+red2 = (red, red)
+green2 = (green, green)
+blue2 = (blue, blue)
+
+phase_dict = {
+    "off":    off2 + off2 + off2 + off2,
+
+    "main a": red2 + off2 + off2 + off2,
+    "fill a": red2 + green2 + off2 + off2,
+    "next b": red2 + red2 + off2 + off2,  # fill_a -> b
+
+    "main b": red2 + red2 + red2 + off2,
+    "fill b": red2 + red2 + red2 + green2,
+    "next a": red2 + red2 + red2 + red2  # fill_b -> a
+    }
 
 
 class Phase_Display:
-    """Display the pattern 'phase' on a NeoPixel Strip."""
-    def __init__(self, phase_names):
+    """Display the pattern 'phase' on the NeoPixel Strip."""
+    def __init__(self, pixel_pin):
 
-        self._pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2,
+        self._pixels = neopixel.NeoPixel(pixel_pin, NUM_PIXELS, brightness=0.2,
                                          auto_write=False, pixel_order=ORDER)
-
-        # Off and then the 4 phases.
-        self._phase_names = ["off"] + phase_names
-
 
     def set_phase_by_name(self, phase):
         """Set the phase as indicated in the list passed in at object construction."""
 
-        self._pixels.fill(phase_colors[0])
-
-        # light LED pairs according to phase_colors
-        phase_index = self._phase_names.index(phase)
-        for j in range(1, phase_index+1):
-            l1 = 2*(j-1)
-            self._pixels[l1]  = phase_colors[j]
-            self._pixels[l1+1] = phase_colors[j]
-
+        pix = phase_dict[phase]
+        for i in range(8):
+            self._pixels[i] = pix[i]
         self._pixels.show()
 
 
-# not really used
+# not used
 
     def wheel(self, pos):
 

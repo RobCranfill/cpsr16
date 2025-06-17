@@ -405,7 +405,7 @@ def main():
     print(f"Free mem at start: {get_free_mem()}")
 
     phases = [DICT_KEYWORD_MAIN_A, DICT_KEYWORD_FILL_A, DICT_KEYWORD_MAIN_B, DICT_KEYWORD_FILL_B]
-    phaser = phase_display.Phase_Display(phases)
+    phaser = phase_display.Phase_Display(HARDWARE_CONFIG.NEOPIXEL_STRIP_PIN)
     for p in phases:
         phaser.set_phase_by_name(p)
         time.sleep(.5)
@@ -673,6 +673,12 @@ def main():
                     if is_in_fill:
                         advance_via_fill = True
                         # print(f"  ->  Will advance to next pattern...")
+
+                        if current_pattern_name == DICT_KEYWORD_FILL_A:
+                            phaser.set_phase_by_name("next b")
+                        else:
+                            phaser.set_phase_by_name("next a")
+
                     else:
                         is_in_fill = True
                         if current_pattern_name == DICT_KEYWORD_MAIN_A:
