@@ -24,15 +24,15 @@ green2 = (green, green)
 blue2 = (blue, blue)
 
 phase_dict = {
-    "off":    off2 + off2 + off2 + off2,
+    "off":    off2 + off2   + off2 + off2,
 
-    "main a": red2 + off2 + off2 + off2,
-    "fill a": red2 + green2 + off2 + off2,
-    "next b": red2 + red2 + off2 + off2,  # fill_a -> b
+    "main a": blue2 + off2   + off2 + off2,
+    "fill a": blue2 + blue2  + off2 + off2,
+    "next b": blue2 + green2 + off2 + off2,  # fill_a -> b
 
-    "main b": red2 + red2 + red2 + off2,
-    "fill b": red2 + red2 + red2 + green2,
-    "next a": red2 + red2 + red2 + red2  # fill_b -> a
+    "main b": blue2 + blue2 + blue2 + off2,
+    "fill b": blue2 + blue2 + blue2 + blue2,
+    "next a": blue2 + blue2 + blue2 + green2  # fill_b -> a
     }
 
 
