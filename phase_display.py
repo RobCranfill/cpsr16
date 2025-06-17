@@ -4,18 +4,16 @@
 # support "pre-next" phases (fill_a -> b and fill_b -> a)
 
 import time
-import board
 import neopixel
 
 
-# pixel_pin = board.D13
 NUM_PIXELS = 8
 ORDER = neopixel.GRB
 
 # wtf? i thought this was GRB order, as noted above, but now it's not
 off =   ( 0, 0, 0)
-red =   (255, 0, 0)
-green = (0, 255, 0)
+red =   (128, 0, 0)
+green = (0, 32, 0)
 blue = (0, 0, 255)
 
 off2 = (off, off)
@@ -24,7 +22,7 @@ green2 = (green, green)
 blue2 = (blue, blue)
 
 phase_dict = {
-    "off":    off2 + off2   + off2 + off2,
+    "off":    off2  + off2   + off2 + off2,
 
     "main a": blue2 + off2   + off2 + off2,
     "fill a": blue2 + blue2  + off2 + off2,
@@ -40,7 +38,7 @@ class Phase_Display:
     """Display the pattern 'phase' on the NeoPixel Strip."""
     def __init__(self, pixel_pin):
 
-        self._pixels = neopixel.NeoPixel(pixel_pin, NUM_PIXELS, brightness=0.2,
+        self._pixels = neopixel.NeoPixel(pixel_pin, NUM_PIXELS,
                                          auto_write=False, pixel_order=ORDER)
 
     def set_phase_by_name(self, phase):
