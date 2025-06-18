@@ -26,3 +26,5 @@ SWITCH_2 = board.GP27 # right-hand footswitch: fill, tap
 BUTTON_A = board.GP17 # middle = up
 BUTTON_B = board.GP16 # left = down
 BUTTON_C = board.GP18 # does nothing yet
+
+NEOPIXEL_STRIP_PIN = board.D13

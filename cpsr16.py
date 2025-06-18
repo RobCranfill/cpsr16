@@ -570,7 +570,7 @@ def main():
             # Menu buttons?
             if b1 or b2 or b3:
                 setup_changed = False
-                print(f"handle button {b1=} {b2=} {b3=}")
+                # print(f"handle button {b1=} {b2=} {b3=}")
                 if b1:
                     setup_index = (setup_index+1) % len(setup_names)
                     setup_name = setup_names[setup_index]

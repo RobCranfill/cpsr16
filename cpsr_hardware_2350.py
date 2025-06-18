@@ -23,5 +23,7 @@ BUTTON_A = board.A2 # middle = up
 BUTTON_B = board.A1 # left = down
 BUTTON_C = board.A0 # does nothing yet, if ever.
 
+NEOPIXEL_STRIP_PIN = board.D13
+
 # end hardware-dependent section -------------------------------------------------
 
