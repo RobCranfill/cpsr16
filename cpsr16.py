@@ -73,15 +73,11 @@ import cpsr_hardware_2350 as HARDWARE_CONFIG
 __repo__ = "https://github.com/RobCranfill/cpsr16.git"
 
 
-# TODO: make this variable???
-# This is the smallest note/beat we handle. 16 means sixteenth notes, etc.
-TICKS_PER_MEASURE = 16
-
 # FIXME: this only works for TICKS_PER_MEASURE = 16
 BEAT_NAMES = ["1", "e", "and", "uh", "2", "e", "and", "uh", "3", "e", "and", "uh", "4", "e", "and", "uh"]
 
 # The data file we read.
-DATA_FILE_NAME = "rhythms-4-sr16.dict"
+DATA_FILE_NAME = "rhythms-2.dict"
 
 # idle loop hander delay - useful/needed?
 NOT_PLAYING_DELAY = 0.01
@@ -90,6 +86,7 @@ NOT_PLAYING_DELAY = 0.01
 # What is the best value? Esp w/r/t "fancy timing"?
 MIXER_BUFFER_BYTES = 256
 
+# Audio constants for our samples.
 SAMPLE_RATE = 22050
 CHANNEL_COUNT = 1
 BITS_PER_SAMPLE = 16
@@ -97,9 +94,10 @@ SAMPLES_SIGNED = True
 
 DISPLAY_TIMEOUT_SECONDS = 60
 
-# I thought this was useful, but setting the Mixer buffer size low seems to work fine!
+# Part of my quest for no mixer noise. Not used now, but maybe someday?
 USE_FANCY_TIMING = False
 
+# Keys in the data file.
 DICT_KEYWORD_SETUP = "setup"
 DICT_KEYWORD_PADS = "pads"
 DICT_KEYWORD_PATTERNS = "patterns"
@@ -110,7 +108,7 @@ DICT_KEYWORD_FILL_B = "fill b"
 
 
 def read_json(filename):
-    """Returns the de-JSON-ed data, a big object heirarchy."""
+    """Returns the de-JSON-ed data: a big object heirarchy."""
 
     print(f"* Reading config {filename}...")
     with open(filename, encoding="utf8") as f:
@@ -229,34 +227,34 @@ def get_setup_names(setups):
     return names
 
 
-def make_beats(pad_name, beat_pattern, channel):
+def make_beats(pad_name, beat_pattern, channel, ticks_per_pattern):
     """
     Given the pad name and beat pattern, add all non-zero hits to a list of hits.
     Return a BEATS_PER_MEASURE-slot list of beats like (channel, vol) for this pad.
     """
-    # print(f"   make_beats for pad '{pad_name}': '{beat_pattern}'")
 
-    beat_list = [()] * TICKS_PER_MEASURE
-    j = -1 # The input is broken into 4-char chunks for readability; j is index into beat_pattern string.
+    print(f"   make_beats for pad '{pad_name=}': '{beat_pattern=}' {ticks_per_pattern=}")
 
-    i_track = channel # OK?
+    beat_list = [()] * ticks_per_pattern
 
-    for beat in range(TICKS_PER_MEASURE):
-        if beat % 4 == 0:
-            j += 1
-        # print(f"Looking at {beat=} from char {j}...")
-        beat_char = beat_pattern[j]
+    compressed_beats = ''.join(c for c in beat_pattern if c != ' ' )
+    print(f" {compressed_beats=}")
+
+    j = 0 # The input is broken into 4-char chunks for readability; j is index into beat_pattern string.
+
+    for beat in range(ticks_per_pattern):
+        beat_char = compressed_beats[j]
         if beat_char != "-":
             # print(f"  beat at {beat}/{j} from {pad_name=} = {beat_char}")
-            beat_list[beat] = (i_track, int(beat_char))
+            beat_list[beat] = (channel, int(beat_char))
             # print(f" - added {beat_list[beat]}")
         j += 1
 
-    # print(f"    {beat_list=}\n")
+    print(f"    {beat_list=}\n")
     return beat_list
 
 
-def load_beats_for_patterns(setup, wav_dict):
+def load_beats_for_patterns(setup, wav_dict, ticks_per_pattern):
     """Load all the beats for all the patterns, so we are ready to switch as needed.
     Return a dict like:
       {"main_a": beats,
@@ -264,7 +262,7 @@ def load_beats_for_patterns(setup, wav_dict):
        ...
        }
     where beats are like:
-        beats = ((),) * TICKS_PER_MEASURE 
+        beats = ((),) * ticks_per_pattern 
            containing, say:
         beats[0] = ((0, wav_dict["snare"], 5),  (0, wav_dict["kick"], 9))
         beats[4] = ((0, wav_dict["snare"], 9))
@@ -290,7 +288,7 @@ def load_beats_for_patterns(setup, wav_dict):
 
         for voice, patt in pattern_dict.items():
             channel = wav_dict[voice][0]
-            tracks.append(make_beats(voice, patt, channel))
+            tracks.append(make_beats(voice, patt, channel, ticks_per_pattern))
             # print(f"  > tracks now {tracks}")
 
         # print(f"load_beats_for_patterns: - {tracks=}")
@@ -303,7 +301,7 @@ def load_beats_for_patterns(setup, wav_dict):
         #  which is a list of *the same object*
         #  and does very weird stuff! :-/
         #
-        track_hits = [[] for _ in range(TICKS_PER_MEASURE)]
+        track_hits = [[] for _ in range(ticks_per_pattern)]
 
         for t in range(len(tracks)):
             for b in range(len(tracks[t])):
@@ -370,7 +368,7 @@ def load_setup_pads(setups, name):
     return this_setup, wavs_for_channels, wav_table
 
 
-def load_beats_and_mixer(audio_out, all_setups, setup_name):
+def load_beats_and_mixer(audio_out, all_setups, setup_name, ticks_per_pattern):
     """Return wavs_for_channels, wavetable, setup_beats, mixer """
 
     print(f"Loading setup '{setup_name}'")
@@ -378,7 +376,7 @@ def load_beats_and_mixer(audio_out, all_setups, setup_name):
     this_setup, wavs_for_channels, wavetable = load_setup_pads(all_setups, setup_name)
 
     # Load the beats for all patterns for this setup.
-    setup_beats = load_beats_for_patterns(this_setup, wavs_for_channels)
+    setup_beats = load_beats_for_patterns(this_setup, wavs_for_channels, ticks_per_pattern)
 
     # Allocate a mixer with just enough channels.
     mixer = init_mixer(audio_out, len(wavs_for_channels))
@@ -399,9 +397,25 @@ def bpm_to_sleep_time(bpm):
     return tick_delay
 
 
+def extract_config_meta(one_setup):
+    """Return the meta info from the setup."""
+
+    bpm = one_setup["bpm"]
+    ticks_per_measure = one_setup["ticks_per_measure"]
+    measures_per_pattern = one_setup["measures_per_pattern"]
+
+    print(f"* extract_config_meta: {bpm=}, {ticks_per_measure=}, {measures_per_pattern=}")
+
+    return bpm, ticks_per_measure, measures_per_pattern
+
+
+
 ###########################################################
 def main():
 
+
+    print(f" ************ THIS IS {__name__} ************\n\n")
+    
     print(f"Free mem at start: {get_free_mem()}")
 
     phases = [DICT_KEYWORD_MAIN_A, DICT_KEYWORD_FILL_A, DICT_KEYWORD_MAIN_B, DICT_KEYWORD_FILL_B]
@@ -474,11 +488,14 @@ def main():
     # Load all the initial data. Whew!
     setup_index = 0
     setup_names = get_setup_names(all_setups)
-    setup_name = setup_names[setup_index]
+    setup_name  = setup_names[setup_index]
 
-    wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+    bpm, ticks_per_measure, measures_per_pattern = extract_config_meta(all_setups[setup_index])
+    ticks_per_pattern = ticks_per_measure * measures_per_pattern
+    print(f"***\n {ticks_per_pattern=}")
 
-    bpm = 60
+    wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name, ticks_per_pattern)
+
     TICK_SLEEP_TIME = bpm_to_sleep_time(bpm)
     TICK_SLEEP_TIME_MS = TICK_SLEEP_TIME * 1_000
 
@@ -498,7 +515,7 @@ def main():
     current_pattern_name = DICT_KEYWORD_MAIN_A
 
     # 'pattern_beats' is the main data structure we are using as we play a rhythm.
-    # It is a list of size TICKS_PER_MEASURE, with a list of each voice to be played that tick.
+    # It is a list of size ticks_per_pattern, with a list of each voice to be played that tick.
     # That is, a list of (channel, volume) pairs.
     #
     pattern_beats = setup_beats[current_pattern_name]
@@ -606,7 +623,7 @@ def main():
 
         while is_playing:
 
-            for tick_number in range(TICKS_PER_MEASURE):
+            for tick_number in range(ticks_per_pattern):
 
                 # if tick_number % 4 == 0:
                 #     display.set_line_3(f"{BEAT_NAMES[tick_number]}")
