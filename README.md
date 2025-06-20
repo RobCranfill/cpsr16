@@ -46,28 +46,54 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
   * "Ready" beep?
   * Overall volume control?
 
+## Data file format
+The input JSON file is basically just an encoding of a Python object.
+It's a <b>list</b> of <b>dictionaries</b>, each of which has the following keys:
+
+ * "file comment": A string that will be ignored, for documentation. (Of course, *any* unknown key will act the same.)
+ * "setup": The name that will be displayed on the GUI.
+ * "comment": Doc string.
+ * "bpm": An integer
+ * "ticks_per_measure": An integer, usually 16.
+ * "measures_per_pattern": An integer, usually 1 or 2.
+ * "pads": A dictionary of 
+   * {pad name}: {wav file path}
+ * "patterns": A dictionary with the keys "main a", "fill a", "main b", "fill b",
+    each of which is a dictionary with one or more (zero or more?) keys of
+    {pad name} (where {pad name} was declared in the "pads" section), with a key value
+    of a string. The string has ({ticks_per_measure} * {measures_per_pattern}) non-blank characters (blanks are ignored)
+    that are either "-", meaning that pad isn't played on that tick, or a digit 0 thru 9, 
+    meaning the pad is played at that relative volume. (So "-" and "0" are equivalent).
+
+
+
+  
+
+
+
 
 ## Hardware Configuration
 
-### RP Pico
-| Signal   | Pico Pin # | Device |
-| -------- | -- | ------- |
-| I2C SDA  | 1  | Display SDA |
-| I2C SCL  | 2  | Display SCL |
-| GND      | 3*  | Display GND |
-| AUDIO_OUT_I2S_BIT  | 11 (board.GP8)  |  PCM BCLK |
-| AUDIO_OUT_I2S_WORD | 12 (board.GP9)  |  PCM WSEL |
-| AUDIO_OUT_I2S_DATA | 14 (board.GP10) |  PCM DIN  |
-| GND      | 18* |  PCM GND |
-| BUTTON_B | 21 (board.GP16) | Center menu button |
-| BUTTON_A | 22 (board.GP17) | Left-hand menu button |
-| GND      | 23*             | (all 3 buttons)
-| BUTTON_C | 24 (board.GP18) | Right-hand menu button |
-| GND      | 33* | Footswitch jack SLEEVE |
-| SWITCH_1 | 31 (board.GP28) | Footswitch jack RING |
-| SWITCH_2 | 32 (board.GP27) | Footswitch jack TIP |
-| 3v3      | 36 |  PCM VIN |
-| 3v3      | 36 | Display VIN |
+| Signal   | Pico Pin # | RP2350 Pin # | Device |
+| -------- | -- | -- | ------- |
+| I2C SDA  | 1  | - | Display SDA |
+| I2C SCL  | 2  | - | Display SCL |
+| GND      | 3* | ? | Display GND |
+| AUDIO_OUT_I2S_BIT  | 11 (board.GP8)  | ? |  PCM BCLK |
+| AUDIO_OUT_I2S_WORD | 12 (board.GP9)  | ? |  PCM WSEL |
+| AUDIO_OUT_I2S_DATA | 14 (board.GP10) | ? |  PCM DIN  |
+| GND      | 18* | ? |  PCM GND |
+| BUTTON_B | 21 (board.GP16) | ? | Center menu button |
+| BUTTON_A | 22 (board.GP17) | ? | Left-hand menu button |
+| GND      | 23*             | ? | (all 3 buttons)
+| BUTTON_C | 24 (board.GP18) | ? | Right-hand menu button |
+| GND      | 33* | ? | Footswitch jack SLEEVE |
+| SWITCH_1 | 31 (board.GP28) | ? | Footswitch jack RING |
+| SWITCH_2 | 32 (board.GP27) | ? | Footswitch jack TIP |
+| 3v3      | 36 | ? |  PCM VIN |
+| 3v3      | 36 | - | Display VIN |
+| 3v3      | ?  | D13 | NeoPixel VIN |
+
 
 *Note: GND is GND - use whatever pin you want! For 
 
