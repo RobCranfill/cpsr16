@@ -33,6 +33,10 @@ class _Display:
         display_bus = i2cdisplaybus.I2CDisplayBus(i2c, device_address=oled_i2c_address)
         display = adafruit_displayio_ssd1306.SSD1306(display_bus, width=WIDTH, height=display_height)
 
+        # A fix for noisy display?
+        display.auto_refresh = False
+        self._display = display
+
         # Make the display context
         splash = displayio.Group()
         display.root_group = splash
@@ -71,16 +75,20 @@ class _Display:
         self.__last_anim = time.monotonic()
 
         # print(".__init__() OK!")
+    # end of __init__
+
 
     def set_line_1(self, text):
         self.__set_text_1(text)
+        self._display.refresh()
 
     def set_line_2(self, text):
         self.__set_text_2(text)
-    
+        self._display.refresh()
+            
     def set_line_3(self, text):
         self.__set_text_3(text)
-
+        self._display.refresh()
 
     def blank(self):
         """Screensaver. Hold the old text for restoration."""

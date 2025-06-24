@@ -5,7 +5,7 @@
     "setup": "Two measures",
     "comment": "Data for more than one measure???",
 
-    "bpm": 75,
+    "bpm": 50,
     "ticks_per_measure": 16,
     "measures_per_pattern": 2,
 
@@ -53,6 +53,9 @@
     {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
     "setup": "Rock 0",
+    "bpm": 75,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -63,27 +66,27 @@
         {
         "main a":
             {
-            "hi_hat_open":     "9--- 9--- 9--- 9---",
-            "snare":           "---- 9--- ---- 9---",
-            "bass":            "9--- ---- 9--- ----",
+            "hi_hat_open":   "9--- 9--- 9--- 9---",
+            "snare":         "---- 9--- ---- 9---",
+            "bass":          "9--- ---- 9--- ----",
             },
         "fill a"
             {
-            "hi_hat_open":     "9--- 9--- 9--- 9---",
-            "snare":           "---- 9--- ---- 9---",
-            "bass":            "9--- ---- 9-9- ----"
+            "hi_hat_open":   "9--- 9--- 9--- 9---",
+            "snare":         "---- 9--- ---- 9---",
+            "bass":          "9--- ---- 9-9- ----"
             },
         "main b":
             {
-            "hi_hat_open":     "9-9- 9-9- 9-9- 9-9-",
-            "snare":           "--9- --9- --9- --9-",
-            "bass":            "9--- ---- 9--- ----"
+            "hi_hat_open":   "9-9- 9-9- 9-9- 9-9-",
+            "snare":         "--9- --9- --9- --9-",
+            "bass":          "9--- ---- 9--- ----"
             },
         "fill b":
             {
-            "hi_hat_open":     "9--- 9--- 9--- 9---",
-            "snare":           "---- 9-9- 9-9- 9999",
-            "bass":            "9--- ---- 9--- ----"
+            "hi_hat_open":   "9--- 9--- 9--- 9---",
+            "snare":         "---- 9-9- 9-9- 9999",
+            "bass":          "9--- ---- 9--- ----"
             }
         }
     },

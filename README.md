@@ -21,9 +21,10 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
   * Display
     * This is problematic. The Pico doesn't work well with SPI displays - not with what I'm asking of it.
     * A small I2C OLED display seems to work OK. Adafruit product #4440 (128x32) or #326 (128x64).
+    * A new feature is a NeoPixel 8-LED strip with a "Christmas tree" display.
 
 
-## Hardware List
+## Hardware
   * Raspberry Pi Pico or similar MCU - https://www.adafruit.com/product/4864
     * Or upgrade to an RP2350-based MCU!
     * And/or use a Feather, for battery power!
@@ -50,9 +51,9 @@ Inspired by the ancient and venerable Alesis SR-16 - hence the name, <b>C</b>irc
 The input JSON file is basically just an encoding of a Python object.
 It's a <b>list</b> of <b>dictionaries</b>, each of which has the following keys:
 
- * "file comment": A string that will be ignored, for documentation. (Of course, *any* unknown key will act the same.)
+ * "file comment": An optional string that will be ignored, for documentation, placed in the first dictionary of the list. (Of course, *any* unknown key will act the same.)
  * "setup": The name that will be displayed on the GUI.
- * "comment": Doc string.
+ * "comment": OIptional doc string.
  * "bpm": An integer
  * "ticks_per_measure": An integer, usually 16.
  * "measures_per_pattern": An integer, usually 1 or 2.
@@ -63,7 +64,7 @@ It's a <b>list</b> of <b>dictionaries</b>, each of which has the following keys:
     {pad name} (where {pad name} was declared in the "pads" section), with a key value
     of a string. The string has ({ticks_per_measure} * {measures_per_pattern}) non-blank characters (blanks are ignored)
     that are either "-", meaning that pad isn't played on that tick, or a digit 0 thru 9, 
-    meaning the pad is played at that relative volume. (So "-" and "0" are equivalent).
+    meaning the pad is played at that relative volume. (So "-" and "0" are equivalent.)
 
 
 

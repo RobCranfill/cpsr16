@@ -58,7 +58,7 @@ import phase_display
 # This works around the bug wherein OLED updates cause audio glitches.
 # When this is True, we don't update the display while making sound. :-(
 #
-REDUCE_OLED_DISPLAY = True
+REDUCE_OLED_DISPLAY = False
 
 
 ############# Hardware pin assignments
@@ -67,7 +67,7 @@ REDUCE_OLED_DISPLAY = True
 #
 # TODO: Automate this - by checking hardware?
 # import cpsr_hardware_pico as HARDWARE_CONFIG
-import cpsr_hardware_2350 as HARDWARE_CONFIG
+import cpsr_hardware_2350a as HARDWARE_CONFIG
 
 
 __repo__ = "https://github.com/RobCranfill/cpsr16.git"
@@ -84,7 +84,12 @@ NOT_PLAYING_DELAY = 0.01
 
 # Mixer buffer size, per voice.
 # What is the best value? Esp w/r/t "fancy timing"?
-MIXER_BUFFER_BYTES = 256
+# We only use one or the other of these:
+MIXER_BUFFER_BYTES_PER_VOICE = 256
+MIXER_BUFFER_BYTES = 32 * 1024
+
+# Part of my quest for no mixer noise.
+USE_FANCY_TIMING = True
 
 # Audio constants for our samples.
 SAMPLE_RATE = 22050
@@ -93,9 +98,6 @@ BITS_PER_SAMPLE = 16
 SAMPLES_SIGNED = True
 
 DISPLAY_TIMEOUT_SECONDS = 60
-
-# Part of my quest for no mixer noise. Not used now, but maybe someday?
-USE_FANCY_TIMING = False
 
 # Keys in the data file.
 DICT_KEYWORD_SETUP = "setup"
@@ -141,7 +143,8 @@ def init_mixer(audio_out, n_voices: int):
     mixer = audiomixer.Mixer(voice_count=n_voices,
                              sample_rate=SAMPLE_RATE, channel_count=CHANNEL_COUNT,
                              bits_per_sample=BITS_PER_SAMPLE, samples_signed=SAMPLES_SIGNED,
-                             buffer_size=MIXER_BUFFER_BYTES * n_voices)
+                            #  buffer_size=MIXER_BUFFER_BYTES_PER_VOICE * n_voices)
+                            buffer_size=MIXER_BUFFER_BYTES)
 
     audio_out.play(mixer) # attach mixer to audio playback
     return mixer
@@ -238,7 +241,7 @@ def make_beats(pad_name, beat_pattern, channel, ticks_per_pattern):
     beat_list = [()] * ticks_per_pattern
 
     compressed_beats = ''.join(c for c in beat_pattern if c != ' ' )
-    print(f" {compressed_beats=}")
+    print(f" compressed_beats='{compressed_beats}'")
 
     j = 0 # The input is broken into 4-char chunks for readability; j is index into beat_pattern string.
 
@@ -600,9 +603,15 @@ def main():
                     setup_changed = True
 
                 if setup_changed:
+
                     # Get all the data for the new setup.
-                    wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name)
+                    bpm, ticks_per_measure, measures_per_pattern = extract_config_meta(all_setups[setup_index])
+                    ticks_per_pattern = ticks_per_measure * measures_per_pattern
+                    print(f"***\n {ticks_per_pattern=}")
+                    
+                    wavetable, setup_beats, mixer = load_beats_and_mixer(audio_out, all_setups, setup_name, ticks_per_pattern)
                     pattern_beats = setup_beats[current_pattern_name]
+
                     display.set_line_1(setup_name)
 
             # Idle handler.
