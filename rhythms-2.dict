@@ -1,11 +1,52 @@
 [
     {
+    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
+    "setup": "DH: Rock 1",
+    "bpm": 80,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
+    "pads":
+        {
+        "snare":           "wav/sr16-SNR01.wav",
+        "bass":            "wav/sr16-BD01.wav",
+        "hi_hat_open":     "wav/sr16-OP_HAT1a.wav",
+        },
+    "patterns":
+        {
+        "main a":
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9--- ----",
+            },
+        "fill a"
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9-9- ----"
+            },
+        "main b":
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- ---- 9--- ----"
+            },
+        "fill b":
+            {
+            "hi_hat_open":     "9--- 9--- 9--- 9---",
+            "snare":           "---- 9--- ---- 9---",
+            "bass":            "9--- --9- 9-9- ----"
+            }
+        }
+    },
+
+    {
     "file comment": "SR-16 audio from https://www.polynominal.com/sample-packs/Alesis-SR16-sample-pack/",
 
-    "setup": "Two measures",
-    "comment": "Data for more than one measure???",
+    "setup": "Two meas?",
+    "comment": "NEW: Data for more than one measure?",
 
-    "bpm": 50,
+    "bpm": 120,
     "ticks_per_measure": 16,
     "measures_per_pattern": 2,
 
@@ -49,89 +90,12 @@
         }
     },
 
-
-    {
-    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 0",
-    "bpm": 75,
-    "ticks_per_measure": 16,
-    "measures_per_pattern": 1,
-    "pads":
-        {
-        "snare":           "wav/sr16-SNR01.wav",
-        "bass":            "wav/sr16-BD01.wav",
-        "hi_hat_open":     "wav/sr16-OP_HAT1a.wav",
-        },
-    "patterns":
-        {
-        "main a":
-            {
-            "hi_hat_open":   "9--- 9--- 9--- 9---",
-            "snare":         "---- 9--- ---- 9---",
-            "bass":          "9--- ---- 9--- ----",
-            },
-        "fill a"
-            {
-            "hi_hat_open":   "9--- 9--- 9--- 9---",
-            "snare":         "---- 9--- ---- 9---",
-            "bass":          "9--- ---- 9-9- ----"
-            },
-        "main b":
-            {
-            "hi_hat_open":   "9-9- 9-9- 9-9- 9-9-",
-            "snare":         "--9- --9- --9- --9-",
-            "bass":          "9--- ---- 9--- ----"
-            },
-        "fill b":
-            {
-            "hi_hat_open":   "9--- 9--- 9--- 9---",
-            "snare":         "---- 9-9- 9-9- 9999",
-            "bass":          "9--- ---- 9--- ----"
-            }
-        }
-    },
-
-    {
-    "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 1",
-    "pads":
-        {
-        "snare":           "wav/sr16-SNR01.wav",
-        "bass":            "wav/sr16-BD01.wav",
-        "hi_hat_open":     "wav/sr16-OP_HAT1a.wav",
-        },
-    "patterns":
-        {
-        "main a":
-            {
-            "hi_hat_open":     "9--- 9--- 9--- 9---",
-            "snare":           "---- 9--- ---- 9---",
-            "bass":            "9--- ---- 9--- ----",
-            },
-        "fill a"
-            {
-            "hi_hat_open":     "9--- 9--- 9--- 9---",
-            "snare":           "---- 9--- ---- 9---",
-            "bass":            "9--- ---- 9--- ----"
-            },
-        "main b":
-            {
-            "hi_hat_open":     "9--- 9--- 9--- 9---",
-            "snare":           "---- 9--- ---- 9---",
-            "bass":            "9--- ---- 9--- ----"
-            },
-        "fill b":
-            {
-            "hi_hat_open":     "9--- 9--- 9--- 9---",
-            "snare":           "---- 9--- ---- 9---",
-            "bass":            "9--- ---- 9--- ----"
-            }
-        }
-    },
-
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 2",
+    "setup": "DH: Rock 2",
+    "bpm": 105,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -169,7 +133,11 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 3",
+    "setup": "DH: Rock 3",
+    "bpm": 85,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
+
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -207,7 +175,10 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 6",
+    "setup": "DH: Rock 6",
+    "bpm": 90,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -245,7 +216,10 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 7",
+    "setup": "DH: Rock 7",
+    "bpm": 95,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -277,7 +251,10 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 8",
+    "setup": "DH: Rock 8",
+    "bpm": 100,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -309,7 +286,10 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 9",
+    "setup": "DH: Rock 9",
+    "bpm": 105,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -341,7 +321,10 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 10",
+    "setup": "DH: Rock 10",
+    "bpm": 110,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -373,7 +356,10 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 11",
+    "setup": "DH: Rock 11",
+    "bpm": 115,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -405,7 +391,10 @@
 
    {
     "comment": "From https://drumhelper.com/learning-drums/rock-drum-beats-and-patterns/",
-    "setup": "Rock 13",
+    "setup": "DH: Rock 13",
+    "bpm": 120,
+    "ticks_per_measure": 16,
+    "measures_per_pattern": 1,
     "pads":
         {
         "snare":           "wav/sr16-SNR01.wav",
@@ -445,3 +434,6 @@
 
 
 ]
+
+
+

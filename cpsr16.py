@@ -85,11 +85,15 @@ NOT_PLAYING_DELAY = 0.01
 # Mixer buffer size, per voice.
 # What is the best value? Esp w/r/t "fancy timing"?
 # We only use one or the other of these:
-MIXER_BUFFER_BYTES_PER_VOICE = 256
-MIXER_BUFFER_BYTES = 32 * 1024
+# MIXER_BUFFER_BYTES_PER_VOICE = 256
+
+# MIXER_BUFFER_BYTES = 32 * 1024 # laggy as hell!
+# MIXER_BUFFER_BYTES = 4 * 1024 # sounds fine, much better timing
+MIXER_BUFFER_BYTES = 1 * 1024 # sounds fine - now that I don't update the display
+
 
 # Part of my quest for no mixer noise.
-USE_FANCY_TIMING = True
+USE_FANCY_TIMING = False
 
 # Audio constants for our samples.
 SAMPLE_RATE = 22050
@@ -634,8 +638,9 @@ def main():
 
             for tick_number in range(ticks_per_pattern):
 
-                # if tick_number % 4 == 0:
-                #     display.set_line_3(f"{BEAT_NAMES[tick_number]}")
+                if tick_number % 4 == 0:
+                    print(f"{BEAT_NAMES[tick_number]}")
+                    display.set_line_3(f"{BEAT_NAMES[tick_number]}")
 
                 tick_start_time_ms = supervisor.ticks_ms()
 
